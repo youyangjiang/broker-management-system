@@ -379,9 +379,8 @@ textarea {
   }
 
   .shell {
-    grid-template-columns: 1fr;
-    min-height: auto;
-    align-content: start;
+    display: block;
+    min-height: 0;
   }
 
   .sidebar {
@@ -391,7 +390,8 @@ textarea {
     padding: 10px 12px;
     display: block;
     align-self: start;
-    min-height: auto;
+    min-height: 0;
+    height: auto;
     box-shadow: 0 6px 16px rgba(18, 32, 37, 0.16);
   }
 
@@ -400,6 +400,7 @@ textarea {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    min-height: 56px;
   }
 
   .desktop-brand {
