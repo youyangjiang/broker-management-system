@@ -1,6 +1,8 @@
 "use client";
 
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
 
@@ -17,11 +19,17 @@ const links = [
 ];
 
 export function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+  const pathname = usePathname();
   const [me, setMe] = useState<Record<string, string> | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     apiFetch<Record<string, string>>("/me").then(setMe).catch(() => setMe(null));
   }, []);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   function logout() {
     window.localStorage.removeItem("access_token");
@@ -30,10 +38,19 @@ export function Shell({ title, children }: { title: string; children: React.Reac
 
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">巴西保险经纪业务管理系统<br />Sistema de Corretagem de Seguros</div>
+      <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
+        <div className="mobile-shell-bar">
+          <div className="brand compact">保险经纪系统<br />Sistema de Seguros</div>
+          <button className="icon-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? "关闭菜单 / Fechar menu" : "打开菜单 / Abrir menu"}>
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+        <div className="brand desktop-brand">巴西保险经纪业务管理系统<br />Sistema de Corretagem de Seguros</div>
         <nav className="nav">
-          {links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+          {links.map(([label, href]) => {
+            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+            return <Link key={href} className={active ? "active" : ""} href={href}>{label}</Link>;
+          })}
         </nav>
       </aside>
       <main className="main">

@@ -36,12 +36,12 @@ export function DataTable({ endpoint, columns, createHref, rowHref }: { endpoint
         {createHref ? <button className="button" onClick={() => router.push(createHref)}>新增 / Novo</button> : null}
       </div>
       {error ? <p className="error" style={{ padding: 14 }}>{error}</p> : null}
-      <table className="table">
+      <table className="table mobile-card-table">
         <thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
         <tbody>
           {(data?.items || []).map((item) => (
             <tr key={item.id} className={rowHref ? "clickable" : undefined} onClick={() => rowHref && router.push(rowHref(item))}>
-              {columns.map((column) => <td key={column.key}>{column.key === "status" ? <span className="status">{item[column.key]}</span> : item[column.key] || "-"}</td>)}
+              {columns.map((column) => <td key={column.key} data-label={column.label}>{column.key === "status" ? <span className="status">{item[column.key]}</span> : item[column.key] || "-"}</td>)}
             </tr>
           ))}
         </tbody>

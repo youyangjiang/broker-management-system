@@ -19,6 +19,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-text-size-adjust: 100%;
 }
 
 a {
@@ -45,6 +46,10 @@ textarea {
   padding: 20px 16px;
 }
 
+.mobile-shell-bar {
+  display: none;
+}
+
 .brand {
   font-weight: 700;
   line-height: 1.3;
@@ -62,7 +67,8 @@ textarea {
   border-radius: 6px;
 }
 
-.nav a:hover {
+.nav a:hover,
+.nav a.active {
   background: #20353b;
 }
 
@@ -141,6 +147,11 @@ textarea {
   color: var(--brand-ink);
   padding: 9px 12px;
   cursor: pointer;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .button.secondary {
@@ -250,6 +261,8 @@ textarea {
   border-radius: 6px;
   padding: 10px;
   background: white;
+  min-height: 42px;
+  width: 100%;
 }
 
 .field textarea {
@@ -310,7 +323,22 @@ textarea {
   font-size: 14px;
 }
 
+.icon-button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  display: inline-grid;
+  place-items: center;
+}
+
 @media (max-width: 760px) {
+  body {
+    background: #f3f5f7;
+  }
+
   .shell {
     grid-template-columns: 1fr;
   }
@@ -319,14 +347,109 @@ textarea {
     position: sticky;
     top: 0;
     z-index: 10;
+    padding: 10px 12px;
+    box-shadow: 0 6px 16px rgba(18, 32, 37, 0.16);
+  }
+
+  .mobile-shell-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .desktop-brand {
+    display: none;
+  }
+
+  .brand {
+    margin-bottom: 0;
+  }
+
+  .brand.compact {
+    font-size: 15px;
+  }
+
+  .sidebar .nav {
+    display: none;
+  }
+
+  .sidebar.open .nav {
+    display: grid;
+    margin-top: 10px;
   }
 
   .nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .nav a {
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px;
+    text-align: center;
+    line-height: 1.25;
   }
 
   .main {
-    padding: 16px;
+    padding: 14px;
+  }
+
+  .topbar {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .user-chip {
+    width: 100%;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+  }
+
+  .user-chip div {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .user-chip strong,
+  .user-chip span {
+    overflow-wrap: anywhere;
+  }
+
+  .toolbar {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .toolbar-right .button,
+  .toolbar-left .button,
+  .toolbar > .button {
+    flex: 1 1 150px;
+  }
+
+  .search {
+    width: 100%;
+    min-height: 42px;
   }
 
   .grid {
@@ -334,15 +457,93 @@ textarea {
   }
 
   .form-grid,
+  .permission-grid,
   .detail-grid {
     grid-template-columns: 1fr;
   }
 
-  .table {
-    min-width: 720px;
+  .form-panel {
+    padding: 14px;
+  }
+
+  .panel {
+    border-radius: 8px;
   }
 
   .panel {
     overflow-x: auto;
+  }
+
+  .table {
+    min-width: 680px;
+  }
+
+  .mobile-card-table {
+    min-width: 0;
+    display: block;
+  }
+
+  .mobile-card-table thead {
+    display: none;
+  }
+
+  .mobile-card-table tbody {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .mobile-card-table tr {
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    padding: 10px;
+  }
+
+  .mobile-card-table td {
+    display: grid;
+    grid-template-columns: minmax(104px, 40%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    border: 0;
+    padding: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-card-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .mobile-card-table td:not([data-label]) {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-card-table td:not([data-label])::before {
+    display: none;
+  }
+
+  .login-page {
+    align-items: start;
+    padding: 18px 12px;
+  }
+
+  .login-box {
+    margin-top: 12vh;
+    padding: 18px;
+  }
+
+  .login-box .button {
+    width: 100%;
+  }
+
+  .detail-item {
+    min-height: auto;
   }
 }
