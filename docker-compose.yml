@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16
+    container_name: broker-management-db
+    environment:
+      POSTGRES_USER: broker
+      POSTGRES_PASSWORD: brokerpass
+      POSTGRES_DB: broker_management
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U broker -d broker_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
