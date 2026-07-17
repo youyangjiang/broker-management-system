@@ -1,7 +1,7 @@
 """add client legal entities
 
 Revision ID: 0005_client_legal_entities
-Revises: 0004_users_opportunity_requirements
+Revises: 0004_users_opp_req
 Create Date: 2026-07-16
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0005_client_legal_entities"
-down_revision: Union[str, None] = "0004_users_opportunity_requirements"
+down_revision: Union[str, None] = "0004_users_opp_req"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

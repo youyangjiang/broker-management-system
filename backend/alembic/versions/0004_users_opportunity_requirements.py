@@ -1,6 +1,6 @@
 """add user permissions and opportunity detail fields
 
-Revision ID: 0004_users_opportunity_requirements
+Revision ID: 0004_users_opp_req
 Revises: 0003_address_fields
 Create Date: 2026-07-16
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0004_users_opportunity_requirements"
+revision: str = "0004_users_opp_req"
 down_revision: Union[str, None] = "0003_address_fields"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
