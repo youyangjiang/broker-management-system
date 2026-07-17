@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://broker-management-system-production.up.railway.app/api/v1";
 
 export type PageResult = { items: Record<string, string>[]; total: number; page: number; page_size: number; };
 export function getToken() { if (typeof window === "undefined") return ""; return window.localStorage.getItem("access_token") || ""; }
