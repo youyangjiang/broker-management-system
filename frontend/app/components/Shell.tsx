@@ -52,21 +52,23 @@ export function Shell({ title, children }: { title: string; children: React.Reac
             return <Link key={href} className={active ? "active" : ""} href={href}>{label}</Link>;
           })}
         </nav>
+        <div className="menu-user">
+          {me ? (
+            <>
+              <div>
+                <strong>{me.full_name}</strong>
+                <span>{me.email}</span>
+              </div>
+              <button className="menu-logout" type="button" onClick={logout}>退出 / Sair</button>
+            </>
+          ) : (
+            <Link className="menu-logout" href="/login">登录 / Entrar</Link>
+          )}
+        </div>
       </aside>
       <main className="main">
         <div className="topbar">
-          <div>
-            <h1 className="title">{title}</h1>
-            <div className="muted">基础 CRM 与业务流转 / CRM básico e fluxo operacional</div>
-          </div>
-          {me ? (
-            <div className="user-chip">
-              <div><strong>{me.full_name}</strong><span>{me.email}</span></div>
-              <button className="button secondary" type="button" onClick={logout}>退出 / Sair</button>
-            </div>
-          ) : (
-            <Link className="button secondary" href="/login">登录 / Entrar</Link>
-          )}
+          <h1 className="title">{title}</h1>
         </div>
         {children}
       </main>
