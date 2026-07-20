@@ -1,8 +1,8 @@
-const CACHE_NAME = "huakan-care-v7";
+const CACHE_NAME = "huakan-care-v8";
 const APP_SHELL = [
   "/login",
   "/manifest.webmanifest",
-  "/brand/huakan-logo.png",
+  "/brand/huakan-logo-v2.png",
   "/icons/icon-192-v2.png",
   "/icons/icon-512-v2.png"
 ];
