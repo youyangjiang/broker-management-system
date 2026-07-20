@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -315,12 +316,21 @@ def update_client(client_id: UUID, data: ClientUpdate, db: Session = Depends(get
     if not client or client.deleted_at:
         raise HTTPException(status_code=404, detail="Client not found")
     old_data = serialize_model(client)
-    for key, value in data.model_dump(exclude_unset=True).items():
-        setattr(client, key, value)
-    client.updated_by = user.id
-    db.flush()
-    write_audit(db, user_id=user.id, action_type="update", entity_type="client", entity_id=client.id, old_data=old_data, new_data=serialize_model(client))
-    db.commit()
+    try:
+        for key, value in data.model_dump(exclude_unset=True).items():
+            setattr(client, key, value)
+        client.updated_by = user.id
+        db.flush()
+        new_data = serialize_model(client)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Client update failed: {exc.__class__.__name__}") from exc
+    try:
+        write_audit(db, user_id=user.id, action_type="update", entity_type="client", entity_id=client.id, old_data=old_data, new_data=new_data)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
     return serialize_model(client)
 
 
