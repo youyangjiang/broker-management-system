@@ -410,12 +410,21 @@ def list_opportunities(page: int = 1, page_size: int = Query(25, le=100), search
 
 @app.post("/api/v1/opportunities")
 def create_opportunity(data: OpportunityCreate, db: Session = Depends(get_db), user: User = Depends(require_permission("opportunities.write"))) -> dict:
-    opportunity = Opportunity(**data.model_dump(), opportunity_code=next_code(db, Opportunity, "opportunity_code", "OPP"), owner_user_id=user.id, created_by=user.id, updated_by=user.id)
-    db.add(opportunity)
-    db.flush()
-    write_audit(db, user_id=user.id, action_type="create", entity_type="opportunity", entity_id=opportunity.id, old_data=None, new_data=serialize_model(opportunity))
-    db.commit()
-    return serialize_model(opportunity)
+    try:
+        opportunity = Opportunity(**data.model_dump(), opportunity_code=next_code(db, Opportunity, "opportunity_code", "OPP"), owner_user_id=user.id, created_by=user.id, updated_by=user.id)
+        db.add(opportunity)
+        db.flush()
+        new_data = serialize_model(opportunity)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Opportunity create failed: {exc.__class__.__name__}") from exc
+    try:
+        write_audit(db, user_id=user.id, action_type="create", entity_type="opportunity", entity_id=opportunity.id, old_data=None, new_data=new_data)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+    return new_data
 
 
 @app.get("/api/v1/opportunities/{opportunity_id}")
@@ -438,14 +447,24 @@ def update_opportunity(opportunity_id: UUID, data: OpportunityUpdate, db: Sessio
     if not opportunity or opportunity.deleted_at:
         raise HTTPException(status_code=404, detail="Opportunity not found")
     old_data = serialize_model(opportunity)
-    for key, value in data.model_dump(exclude_unset=True).items():
-        setattr(opportunity, key, value)
-    opportunity.updated_by = user.id
-    db.flush()
-    action = "status_change" if "status" in data.model_dump(exclude_unset=True) else "update"
-    write_audit(db, user_id=user.id, action_type=action, entity_type="opportunity", entity_id=opportunity.id, old_data=old_data, new_data=serialize_model(opportunity))
-    db.commit()
-    return serialize_model(opportunity)
+    values = data.model_dump(exclude_unset=True)
+    try:
+        for key, value in values.items():
+            setattr(opportunity, key, value)
+        opportunity.updated_by = user.id
+        db.flush()
+        new_data = serialize_model(opportunity)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Opportunity update failed: {exc.__class__.__name__}") from exc
+    try:
+        action = "status_change" if "status" in values else "update"
+        write_audit(db, user_id=user.id, action_type=action, entity_type="opportunity", entity_id=opportunity.id, old_data=old_data, new_data=new_data)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+    return new_data
 
 
 @app.patch("/api/v1/opportunities/{opportunity_id}/status")
@@ -459,17 +478,27 @@ def delete_opportunity(opportunity_id: UUID, db: Session = Depends(get_db), user
     if not opportunity or opportunity.deleted_at:
         raise HTTPException(status_code=404, detail="Opportunity not found")
     old_data = serialize_model(opportunity)
-    deleted_at = datetime.now(timezone.utc)
-    opportunity.deleted_at = deleted_at
-    opportunity.updated_by = user.id
-    requirements = db.scalars(select(InsuranceRequirement).where(InsuranceRequirement.opportunity_id == opportunity_id, InsuranceRequirement.deleted_at.is_(None))).all()
-    for requirement in requirements:
-        requirement.deleted_at = deleted_at
-        requirement.updated_by = user.id
-    db.flush()
-    write_audit(db, user_id=user.id, action_type="delete", entity_type="opportunity", entity_id=opportunity.id, old_data=old_data, new_data=serialize_model(opportunity))
-    db.commit()
-    return {"deleted": True, "deleted_requirements": len(requirements)}
+    try:
+        deleted_at = datetime.now(timezone.utc)
+        opportunity.deleted_at = deleted_at
+        opportunity.updated_by = user.id
+        requirements = db.scalars(select(InsuranceRequirement).where(InsuranceRequirement.opportunity_id == opportunity_id, InsuranceRequirement.deleted_at.is_(None))).all()
+        for requirement in requirements:
+            requirement.deleted_at = deleted_at
+            requirement.updated_by = user.id
+        db.flush()
+        new_data = serialize_model(opportunity)
+        deleted_requirements = len(requirements)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Opportunity delete failed: {exc.__class__.__name__}") from exc
+    try:
+        write_audit(db, user_id=user.id, action_type="delete", entity_type="opportunity", entity_id=opportunity.id, old_data=old_data, new_data=new_data)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+    return {"deleted": True, "deleted_requirements": deleted_requirements}
 
 
 @app.get("/api/v1/requirements")
