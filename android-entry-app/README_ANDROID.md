@@ -1,6 +1,6 @@
-# 安卓入口 App 打包说明
+# 华康医保安卓入口 App 打包说明
 
-这个目录是“保险经纪业务管理系统”的 Android 入口 App。App 安装后会直接打开线上系统：
+这个目录是“华康医保”的 Android 入口 App。App 安装后会直接打开线上系统：
 
 https://hearty-alignment-production-2294.up.railway.app/login
 
@@ -22,7 +22,7 @@ https://hearty-alignment-production-2294.up.railway.app/login
 
 如果以后线上网址变了，修改：
 
-`app/src/main/java/com/dingli/broker/MainActivity.java`
+`app/src/main/java/com/huakan/saude/MainActivity.java`
 
 里面的：
 

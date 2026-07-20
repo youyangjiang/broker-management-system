@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BrandLogo } from "./BrandLogo";
 import { apiFetch } from "../lib/api";
 
 const links = [
@@ -40,12 +41,12 @@ export function Shell({ title, children }: { title: string; children: React.Reac
     <div className="shell">
       <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
         <div className="mobile-shell-bar">
-          <div className="brand compact">保险经纪系统<br />Sistema de Seguros</div>
+          <div className="brand compact"><BrandLogo compact /></div>
           <button className="icon-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? "关闭菜单 / Fechar menu" : "打开菜单 / Abrir menu"}>
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
-        <div className="brand desktop-brand">巴西保险经纪业务管理系统<br />Sistema de Corretagem de Seguros</div>
+        <div className="brand desktop-brand"><BrandLogo /></div>
         <nav className="nav">
           {links.map(([label, href]) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);

@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace "com.dingli.broker"
+    namespace "com.huakan.saude"
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.dingli.broker"
+        applicationId "com.huakan.saude"
         minSdk 23
         targetSdk 35
         versionCode 1
