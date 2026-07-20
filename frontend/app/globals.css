@@ -64,6 +64,7 @@ textarea {
   max-width: 360px;
 }
 
+.brand-logo img,
 .brand-logo svg {
   display: block;
   width: 100%;

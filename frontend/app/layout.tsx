@@ -2,8 +2,8 @@ import "./globals.css";
 import { PWARegistration } from "./components/PWARegistration";
 
 export const metadata = {
-  title: "华康医保 / HUAKAN SAUDE",
-  description: "华康医保业务管理系统",
+  title: "华康医护 / HUAKAN SAÚDE",
+  description: "华康医护业务管理系统",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -14,7 +14,7 @@ export const metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "华康医保",
+    title: "华康医护",
     statusBarStyle: "black-translucent"
   }
 };

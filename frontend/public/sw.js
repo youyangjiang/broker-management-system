@@ -1,5 +1,12 @@
-const CACHE_NAME = "huakan-entry-v3";
-const APP_SHELL = ["/login", "/manifest.webmanifest", "/icons/app-icon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CACHE_NAME = "huakan-care-v4";
+const APP_SHELL = [
+  "/login",
+  "/manifest.webmanifest",
+  "/brand/huakan-logo.png",
+  "/icons/app-icon.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png"
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

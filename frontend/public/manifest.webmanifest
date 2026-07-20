@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "华康医保",
-  "short_name": "华康医保",
-  "description": "华康医保业务管理系统移动入口",
+  "name": "华康医护",
+  "short_name": "华康医护",
+  "description": "华康医护业务管理系统移动入口",
   "start_url": "/login",
   "scope": "/",
   "display": "standalone",
