@@ -117,6 +117,7 @@ class RoleCreate(BaseModel):
     code: str
     name: str
     description: str | None = None
+    permission_codes: list[str] = []
 
 
 class RoleUpdate(BaseModel):

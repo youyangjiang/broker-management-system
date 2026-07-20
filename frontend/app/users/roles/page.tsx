@@ -19,17 +19,23 @@ type Role = {
   all_permissions?: Permission[];
 };
 
+type RoleForm = {
+  code: string;
+  name: string;
+  description: string;
+};
+
 const permissionLabels: Record<string, string> = {
   "clients.read": "查看客户 / Ver clientes",
   "clients.write": "新增、编辑、删除客户 / Criar, editar e excluir clientes",
   "opportunities.read": "查看商机 / Ver oportunidades",
   "opportunities.write": "新增、编辑、删除商机 / Criar, editar e excluir oportunidades",
-  "requirements.read": "查看需求、报价、分配 / Ver necessidades, cotações e distribuições",
+  "requirements.read": "查看需求、报价、保单 / Ver necessidades, cotações e apólices",
   "requirements.write": "管理需求、报价、分配和保单 / Gerenciar necessidades, cotações, distribuições e apólices",
   "tasks.read": "查看任务 / Ver tarefas",
   "tasks.write": "新增、编辑、删除任务 / Criar, editar e excluir tarefas",
-  "users.read": "查看用户和分组 / Ver usuários e grupos",
-  "users.write": "管理用户、分组和权限 / Gerenciar usuários, grupos e permissões",
+  "users.read": "查看用户和用户组 / Ver usuários e grupos",
+  "users.write": "管理用户、用户组和权限 / Gerenciar usuários, grupos e permissões",
   "audit.read": "查看审计记录 / Ver auditoria"
 };
 
@@ -47,15 +53,29 @@ function permissionGroup(code: string) {
   return code.split(".")[0] || "other";
 }
 
-function emptyRoleForm() {
+function emptyRoleForm(): RoleForm {
   return { code: "", name: "", description: "" };
+}
+
+function normalizeCode(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function extractErrorMessage(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) return fallback;
+  try {
+    const parsed = JSON.parse(error.message);
+    return parsed.detail || fallback;
+  } catch {
+    return error.message || fallback;
+  }
 }
 
 export default function RolePermissionsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  const [form, setForm] = useState(emptyRoleForm());
+  const [form, setForm] = useState<RoleForm>(emptyRoleForm());
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -64,17 +84,18 @@ export default function RolePermissionsPage() {
     const rows = await apiFetch<Role[]>("/roles");
     setRoles(rows);
     const selected = rows.find((role) => role.id === preferredRoleId) || rows.find((role) => role.id === selectedRoleId) || rows[0];
-    if (selected) {
-      chooseRoleFromRows(selected.id, rows);
-    }
+    if (selected) chooseRoleFromRows(selected.id, rows);
+    if (!selected) prepareNewGroup();
   }
 
   useEffect(() => {
-    load().catch((err) => setError(err.message));
+    load().catch((err) => setError(extractErrorMessage(err, "加载用户组失败 / Falha ao carregar grupos")));
   }, []);
 
   const selectedRole = roles.find((role) => role.id === selectedRoleId);
   const permissions = selectedRole?.all_permissions || roles[0]?.all_permissions || [];
+  const isNewGroup = !selectedRoleId;
+
   const groupedPermissions = useMemo(() => {
     return permissions.reduce<Record<string, Permission[]>>((groups, permission) => {
       const group = permissionGroup(permission.code);
@@ -96,38 +117,48 @@ export default function RolePermissionsPage() {
     setError("");
   }
 
+  function prepareNewGroup() {
+    setSelectedRoleId("");
+    setSelectedCodes([]);
+    setForm(emptyRoleForm());
+    setMessage("");
+    setError("");
+  }
+
   function toggle(code: string) {
     setSelectedCodes((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]);
   }
 
-  async function createGroup(event: React.FormEvent) {
+  function setGroupCodes(codes: string[], checked: boolean) {
+    setSelectedCodes((current) => {
+      if (!checked) return current.filter((code) => !codes.includes(code));
+      return Array.from(new Set([...current, ...codes]));
+    });
+  }
+
+  async function submitGroup(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
     setMessage("");
     setError("");
+    const payload = {
+      ...form,
+      code: normalizeCode(form.code),
+      permission_codes: selectedCodes
+    };
     try {
-      const created = await apiFetch<Role>("/roles", { method: "POST", body: JSON.stringify(form) });
-      await load(created.id);
-      setMessage("用户分组已创建 / Grupo criado");
+      if (isNewGroup) {
+        const created = await apiFetch<Role>("/roles", { method: "POST", body: JSON.stringify(payload) });
+        await load(created.id);
+        setMessage("用户组已注册，权限已保存 / Grupo cadastrado e permissões salvas");
+      } else {
+        await apiFetch(`/roles/${selectedRoleId}`, { method: "PATCH", body: JSON.stringify(payload) });
+        await apiFetch(`/roles/${selectedRoleId}/permissions`, { method: "PATCH", body: JSON.stringify({ permission_codes: selectedCodes }) });
+        await load(selectedRoleId);
+        setMessage("用户组和权限已保存 / Grupo e permissões salvos");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "创建失败 / Falha ao criar");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveGroup() {
-    if (!selectedRoleId) return;
-    setSaving(true);
-    setMessage("");
-    setError("");
-    try {
-      await apiFetch(`/roles/${selectedRoleId}`, { method: "PATCH", body: JSON.stringify(form) });
-      await apiFetch(`/roles/${selectedRoleId}/permissions`, { method: "PATCH", body: JSON.stringify({ permission_codes: selectedCodes }) });
-      await load(selectedRoleId);
-      setMessage("用户分组权限策略已保存 / Política salva");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "保存失败 / Falha ao salvar");
+      setError(extractErrorMessage(err, "保存失败 / Falha ao salvar"));
     } finally {
       setSaving(false);
     }
@@ -135,7 +166,7 @@ export default function RolePermissionsPage() {
 
   async function deleteGroup() {
     if (!selectedRole || selectedRole.code === "admin") return;
-    const confirmed = window.confirm("确认停用这个用户分组吗？已有用户使用的分组不能停用。 / Confirmar desativação deste grupo?");
+    const confirmed = window.confirm("确认停用这个用户组吗？如果已有用户使用该分组，请先把用户调整到其他分组。 / Confirmar desativação deste grupo?");
     if (!confirmed) return;
     setSaving(true);
     setMessage("");
@@ -143,48 +174,54 @@ export default function RolePermissionsPage() {
     try {
       await apiFetch(`/roles/${selectedRoleId}`, { method: "DELETE" });
       await load();
-      setMessage("用户分组已停用 / Grupo desativado");
+      setMessage("用户组已停用 / Grupo desativado");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "停用失败 / Falha ao desativar");
+      setError(extractErrorMessage(err, "停用失败 / Falha ao desativar"));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Shell title="用户分组权限策略 / Políticas de grupos de usuários">
+    <Shell title="用户组注册和权限设置 / Cadastro de grupos e permissões">
       <div className="stack">
         <section className="panel form-panel">
           <div className="toolbar">
             <div className="toolbar-left">
-              <strong>分组资料 / Dados do grupo</strong>
-              <span className="muted">新增或选择一个分组后配置权限 / Crie ou selecione um grupo</span>
+              <strong>用户组资料 / Dados do grupo</strong>
+              <span className="muted">新增用户组时，勾选的权限会一起保存 / Ao cadastrar, as permissões marcadas serão salvas</span>
             </div>
+            <button className="button secondary" type="button" onClick={prepareNewGroup}>新增用户组 / Novo grupo</button>
           </div>
-          <form className="form-grid" onSubmit={createGroup}>
+
+          <form className="form-grid" onSubmit={submitGroup}>
             <div className="field">
-              <label>选择分组 / Selecionar grupo</label>
+              <label>选择现有用户组 / Selecionar grupo existente</label>
               <select value={selectedRoleId} onChange={(event) => chooseRoleFromRows(event.target.value)}>
+                <option value="">新增用户组 / Novo grupo</option>
                 {roles.map((role) => <option key={role.id} value={role.id}>{role.name || role.code}</option>)}
               </select>
             </div>
             <div className="field">
-              <label>分组代码 / Código do grupo</label>
-              <input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="sales_manager" required />
+              <label>用户组代码 / Código do grupo</label>
+              <input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="sales_manager" required disabled={selectedRole?.code === "admin"} />
             </div>
             <div className="field">
-              <label>分组名称 / Nome do grupo</label>
+              <label>用户组名称 / Nome do grupo</label>
               <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="业务经理 / Gerente comercial" required />
+            </div>
+            <div className="field">
+              <label>已选权限 / Permissões selecionadas</label>
+              <input value={`${selectedCodes.length} / ${permissions.length}`} readOnly />
             </div>
             <div className="field full">
               <label>说明 / Descrição</label>
-              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
+              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="例如：负责客户、商机和任务管理 / Ex.: gestão de clientes, oportunidades e tarefas" />
             </div>
             <div className="toolbar-right field full">
-              <button className="button secondary" type="button" onClick={() => { setSelectedRoleId(""); setSelectedCodes([]); setForm(emptyRoleForm()); }}>准备新增 / Novo grupo</button>
-              <button className="button" type="submit" disabled={saving}>创建分组 / Criar grupo</button>
-              <button className="button" type="button" onClick={saveGroup} disabled={saving || !selectedRoleId}>保存策略 / Salvar política</button>
-              <button className="button danger" type="button" onClick={deleteGroup} disabled={saving || !selectedRole || selectedRole.code === "admin"}>停用分组 / Desativar</button>
+              <button className="button" type="submit" disabled={saving}>{saving ? "保存中 / Salvando" : isNewGroup ? "注册用户组并保存权限 / Cadastrar grupo" : "保存用户组权限 / Salvar permissões"}</button>
+              <button className="button secondary" type="button" onClick={prepareNewGroup}>清空 / Limpar</button>
+              <button className="button danger" type="button" onClick={deleteGroup} disabled={saving || !selectedRole || selectedRole.code === "admin"}>停用用户组 / Desativar grupo</button>
             </div>
           </form>
           {message ? <p className="muted">{message}</p> : null}
@@ -194,24 +231,34 @@ export default function RolePermissionsPage() {
         <section className="panel form-panel">
           <div className="toolbar">
             <div className="toolbar-left">
-              <strong>权限策略 / Política de permissões</strong>
-              <span className="muted">{selectedRole ? `${selectedRole.name} (${selectedRole.code})` : "请选择分组 / Selecione um grupo"}</span>
+              <strong>权限设置 / Configuração de permissões</strong>
+              <span className="muted">{selectedRole ? `${selectedRole.name} (${selectedRole.code})` : "正在注册新用户组 / Cadastrando novo grupo"}</span>
             </div>
           </div>
           <div className="stack">
-            {Object.entries(groupedPermissions).map(([group, groupPermissions]) => (
-              <div key={group} className="permission-section">
-                <h3>{groupLabels[group] || groupLabels.other}</h3>
-                <div className="permission-grid">
-                  {groupPermissions.map((permission) => (
-                    <label key={permission.code} className="checkbox-row">
-                      <input type="checkbox" checked={selectedCodes.includes(permission.code)} onChange={() => toggle(permission.code)} />
-                      <span>{permissionLabels[permission.code] || permission.name || permission.code}</span>
+            {Object.entries(groupedPermissions).map(([group, groupPermissions]) => {
+              const groupCodes = groupPermissions.map((permission) => permission.code);
+              const allChecked = groupCodes.every((code) => selectedCodes.includes(code));
+              return (
+                <div key={group} className="permission-section">
+                  <div className="toolbar">
+                    <h3>{groupLabels[group] || groupLabels.other}</h3>
+                    <label className="checkbox-row">
+                      <input type="checkbox" checked={allChecked} onChange={(event) => setGroupCodes(groupCodes, event.target.checked)} />
+                      <span>本组全选 / Selecionar grupo</span>
                     </label>
-                  ))}
+                  </div>
+                  <div className="permission-grid">
+                    {groupPermissions.map((permission) => (
+                      <label key={permission.code} className="checkbox-row">
+                        <input type="checkbox" checked={selectedCodes.includes(permission.code)} onChange={() => toggle(permission.code)} />
+                        <span>{permissionLabels[permission.code] || permission.name || permission.code}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </div>

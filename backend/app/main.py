@@ -194,12 +194,17 @@ def create_role(data: RoleCreate, db: Session = Depends(get_db), user: User = De
         raise HTTPException(status_code=400, detail="Role code is required")
     if db.scalar(select(Role).where(Role.code == code, Role.deleted_at.is_(None))):
         raise HTTPException(status_code=409, detail="Role code already exists")
+    permissions = db.scalars(select(Permission).where(Permission.code.in_(data.permission_codes))).all()
+    if len(permissions) != len(set(data.permission_codes)):
+        raise HTTPException(status_code=400, detail="Unknown permission code")
     role = Role(code=code, name=data.name.strip(), description=data.description, created_by=user.id, updated_by=user.id)
     db.add(role)
     db.flush()
+    for permission in permissions:
+        db.add(RolePermission(role_id=role.id, permission_id=permission.id))
     write_audit(db, user_id=user.id, action_type="create", entity_type="role", entity_id=role.id, old_data=None, new_data=serialize_model(role))
     db.commit()
-    return {**serialize_model(role), "permission_codes": []}
+    return {**serialize_model(role), "permission_codes": data.permission_codes}
 
 
 @app.patch("/api/v1/roles/{role_id}")
