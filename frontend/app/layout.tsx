@@ -2,7 +2,7 @@ import "./globals.css";
 import { PWARegistration } from "./components/PWARegistration";
 
 export const metadata = {
-  title: "华康医保 / HUAKAN SAÚDE",
+  title: "华康医保 / HUAKAN SAUDE",
   description: "华康医保业务管理系统",
   manifest: "/manifest.webmanifest",
   icons: {

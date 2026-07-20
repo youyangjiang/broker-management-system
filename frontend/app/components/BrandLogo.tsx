@@ -1,7 +1,7 @@
 export function BrandLogo({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`brand-logo ${compact ? "compact-logo" : ""}`}>
-      <svg viewBox="0 0 360 118" role="img" aria-label="华康医保 / HUAKAN SAÚDE">
+      <svg viewBox="0 0 380 118" role="img" aria-label="华康医保 / HUAKAN SAUDE">
         <g transform="translate(8 18)">
           <g fill="#58c5bd">
             <circle cx="23" cy="22" r="14" />
@@ -19,8 +19,8 @@ export function BrandLogo({ compact = false }: { compact?: boolean }) {
           </g>
         </g>
         <text x="158" y="55" fill="#58c5bd" fontSize="42" fontWeight="800" fontFamily="Arial, Helvetica, sans-serif">华康医保</text>
-        <path d="M160 82h48M314 82h38" stroke="#58c5bd" strokeWidth="5" strokeLinecap="round" />
-        <text x="218" y="90" fill="#58c5bd" fontSize="22" fontFamily="Arial, Helvetica, sans-serif">HUAKAN SAÚDE</text>
+        <path d="M160 82h48M330 82h38" stroke="#58c5bd" strokeWidth="5" strokeLinecap="round" />
+        <text x="218" y="90" fill="#58c5bd" fontSize="22" fontFamily="Arial, Helvetica, sans-serif">HUAKAN SAUDE</text>
       </svg>
     </div>
   );

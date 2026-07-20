@@ -1,5 +1,6 @@
 {
-  "name": "华康医保 / HUAKAN SAÚDE",
+  "id": "/",
+  "name": "华康医保",
   "short_name": "华康医保",
   "description": "华康医保业务管理系统移动入口",
   "start_url": "/login",
