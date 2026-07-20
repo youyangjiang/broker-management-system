@@ -1,4 +1,4 @@
-const CACHE_NAME = "huakan-care-v8";
+const CACHE_NAME = "huakan-care-v9";
 const APP_SHELL = [
   "/login",
   "/manifest.webmanifest",
@@ -14,6 +14,10 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
+
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
@@ -26,4 +30,27 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request).then((cached) => cached || caches.match("/login")))
   );
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { body: event.data?.text() };
+  }
+  const title = payload.title || "华康医保";
+  const options = {
+    body: payload.body || "您有一条新的系统通知 / Você tem uma nova notificação",
+    icon: "/icons/icon-192-v2.png",
+    badge: "/icons/icon-192-v2.png",
+    data: { url: payload.url || "/" }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(clients.openWindow(url));
 });

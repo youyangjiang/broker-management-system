@@ -126,6 +126,18 @@ class RoleUpdate(BaseModel):
     description: str | None = None
 
 
+class PushSubscriptionCreate(BaseModel):
+    endpoint: str
+    expirationTime: int | None = None
+    keys: dict[str, str]
+
+
+class NotificationSendRequest(BaseModel):
+    title: str = "华康医保"
+    body: str
+    url: str = "/"
+
+
 class ClientBase(BrazilianFieldsMixin):
     client_type: str = "company"
     legal_name: str

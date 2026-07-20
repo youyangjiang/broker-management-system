@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "./BrandLogo";
 import { apiFetch } from "../lib/api";
+import { APP_VERSION } from "../lib/appVersion";
 
 const links = [
   ["首页 / Início", "/"],
@@ -66,6 +67,7 @@ export function Shell({ title, children }: { title: string; children: React.Reac
             <Link className="menu-logout" href="/login">登录 / Entrar</Link>
           )}
         </div>
+        <div className="app-version">v{APP_VERSION}</div>
       </aside>
       <main className="main">
         <div className="topbar">

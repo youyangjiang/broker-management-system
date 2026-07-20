@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     app_secret_key: str = "change-this-before-production"
     access_token_expire_minutes: int = 480
     backend_cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:admin@example.com"
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

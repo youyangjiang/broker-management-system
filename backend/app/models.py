@@ -61,6 +61,16 @@ class User(Base, AuditMixin):
     role: Mapped[Role] = relationship()
 
 
+class PushSubscription(Base, AuditMixin):
+    __tablename__ = "push_subscriptions"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"), index=True)
+    endpoint: Mapped[str] = mapped_column(Text, unique=True)
+    subscription: Mapped[dict] = mapped_column(JSON)
+    device_label: Mapped[str | None] = mapped_column(String(120))
+    status: Mapped[str] = mapped_column(String(30), default="active")
+
+
 class ChannelPartner(Base, AuditMixin):
     __tablename__ = "channel_partners"
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)

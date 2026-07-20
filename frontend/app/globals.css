@@ -75,6 +75,35 @@ textarea {
   max-width: 220px;
 }
 
+.app-version {
+  margin-top: auto;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  padding: 8px 4px 0;
+}
+
+.app-status,
+.notification-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.app-status > div,
+.notification-settings > div {
+  display: grid;
+  gap: 4px;
+}
+
+.app-status .button,
+.notification-settings .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .nav {
   display: grid;
   gap: 6px;
@@ -467,6 +496,15 @@ textarea {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .app-version {
+    display: none;
+  }
+
+  .app-status,
+  .notification-settings {
+    grid-template-columns: 1fr;
   }
 
   .nav {

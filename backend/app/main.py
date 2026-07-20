@@ -1,4 +1,5 @@
-﻿from datetime import datetime, timezone
+﻿import json
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Query
@@ -26,6 +27,7 @@ from app.models import (
     Quote,
     RequirementAssignment,
     Permission,
+    PushSubscription,
     Role,
     RolePermission,
     Task,
@@ -54,6 +56,8 @@ from app.schemas import (
     RoleCreate,
     RolePermissionUpdate,
     RoleUpdate,
+    NotificationSendRequest,
+    PushSubscriptionCreate,
     TaskCreate,
     TaskUpdate,
     TokenResponse,
@@ -63,6 +67,12 @@ from app.schemas import (
 )
 from app.security import create_access_token, hash_password, verify_password
 from app.services import next_code, paged_query, serialize_model, write_audit
+
+try:
+    from pywebpush import WebPushException, webpush
+except ImportError:  # pragma: no cover
+    WebPushException = Exception
+    webpush = None
 
 app = FastAPI(title="Brazil Insurance Broker Management API", version="0.1.0")
 
@@ -266,6 +276,55 @@ def update_role_permissions(role_id: UUID, data: RolePermissionUpdate, db: Sessi
     write_audit(db, user_id=user.id, action_type="update", entity_type="role_permissions", entity_id=role_id, old_data=None, new_data={"permission_codes": data.permission_codes})
     db.commit()
     return {"role_id": str(role_id), "permission_codes": data.permission_codes}
+
+
+@app.post("/api/v1/notifications/subscriptions")
+def save_push_subscription(data: PushSubscriptionCreate, db: Session = Depends(get_db), user: User = Depends(current_user)) -> dict:
+    subscription_data = data.model_dump()
+    existing = db.scalar(select(PushSubscription).where(PushSubscription.endpoint == data.endpoint))
+    if existing:
+        existing.user_id = user.id
+        existing.subscription = subscription_data
+        existing.status = "active"
+        existing.updated_by = user.id
+        db.commit()
+        return serialize_model(existing)
+    subscription = PushSubscription(user_id=user.id, endpoint=data.endpoint, subscription=subscription_data, created_by=user.id, updated_by=user.id)
+    db.add(subscription)
+    db.flush()
+    write_audit(db, user_id=user.id, action_type="create", entity_type="push_subscription", entity_id=subscription.id, old_data=None, new_data=serialize_model(subscription))
+    db.commit()
+    return serialize_model(subscription)
+
+
+@app.get("/api/v1/notifications/subscriptions")
+def list_push_subscriptions(db: Session = Depends(get_db), user: User = Depends(current_user)) -> list[dict]:
+    rows = db.scalars(select(PushSubscription).where(PushSubscription.user_id == user.id, PushSubscription.deleted_at.is_(None)).order_by(PushSubscription.created_at.desc())).all()
+    return [serialize_model(row) for row in rows]
+
+
+@app.post("/api/v1/notifications/test")
+def send_test_notification(data: NotificationSendRequest, db: Session = Depends(get_db), user: User = Depends(current_user)) -> dict:
+    if not webpush or not settings.vapid_public_key or not settings.vapid_private_key:
+        raise HTTPException(status_code=400, detail="Web Push is not configured. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.")
+    rows = db.scalars(select(PushSubscription).where(PushSubscription.user_id == user.id, PushSubscription.deleted_at.is_(None), PushSubscription.status == "active")).all()
+    sent = 0
+    failed = 0
+    for subscription in rows:
+        try:
+            webpush(
+                subscription_info=subscription.subscription,
+                data=json.dumps({"title": data.title, "body": data.body, "url": data.url}),
+                vapid_private_key=settings.vapid_private_key,
+                vapid_claims={"sub": settings.vapid_subject},
+            )
+            sent += 1
+        except WebPushException:
+            failed += 1
+            subscription.status = "error"
+            subscription.updated_by = user.id
+    db.commit()
+    return {"sent": sent, "failed": failed}
 
 
 @app.get("/api/v1/insurance-products")
@@ -900,3 +959,4 @@ def list_audit_logs(page: int = 1, page_size: int = Query(25, le=100), db: Sessi
     total = db.query(AuditLog).count()
     rows = db.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).offset((page - 1) * page_size).limit(page_size)).all()
     return {"items": [serialize_model(row) for row in rows], "total": total, "page": page, "page_size": page_size}
+
