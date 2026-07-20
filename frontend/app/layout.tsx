@@ -7,10 +7,10 @@ export const metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }
+      { url: "/icons/icon-192-v2.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512-v2.png", sizes: "512x512", type: "image/png" }
     ],
-    apple: "/icons/icon-192.png"
+    apple: "/icons/icon-192-v2.png"
   },
   appleWebApp: {
     capable: true,
