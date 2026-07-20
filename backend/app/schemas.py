@@ -113,6 +113,18 @@ class RolePermissionUpdate(BaseModel):
     permission_codes: list[str]
 
 
+class RoleCreate(BaseModel):
+    code: str
+    name: str
+    description: str | None = None
+
+
+class RoleUpdate(BaseModel):
+    code: str | None = None
+    name: str | None = None
+    description: str | None = None
+
+
 class ClientBase(BrazilianFieldsMixin):
     client_type: str = "company"
     legal_name: str

@@ -51,7 +51,9 @@ from app.schemas import (
     RequirementUpdate,
     QuoteAcceptRequest,
     QuoteCreate,
+    RoleCreate,
     RolePermissionUpdate,
+    RoleUpdate,
     TaskCreate,
     TaskUpdate,
     TokenResponse,
@@ -183,6 +185,60 @@ def list_roles(db: Session = Depends(get_db), user: User = Depends(require_permi
         permission_map.setdefault(str(role_id), []).append(code)
     all_permissions = [serialize_model(permission) for permission in permissions]
     return [{**serialize_model(role), "permission_codes": permission_map.get(str(role.id), []), "all_permissions": all_permissions} for role in roles]
+
+
+@app.post("/api/v1/roles")
+def create_role(data: RoleCreate, db: Session = Depends(get_db), user: User = Depends(require_permission("users.write"))) -> dict:
+    code = data.code.strip().lower().replace(" ", "_")
+    if not code:
+        raise HTTPException(status_code=400, detail="Role code is required")
+    if db.scalar(select(Role).where(Role.code == code, Role.deleted_at.is_(None))):
+        raise HTTPException(status_code=409, detail="Role code already exists")
+    role = Role(code=code, name=data.name.strip(), description=data.description, created_by=user.id, updated_by=user.id)
+    db.add(role)
+    db.flush()
+    write_audit(db, user_id=user.id, action_type="create", entity_type="role", entity_id=role.id, old_data=None, new_data=serialize_model(role))
+    db.commit()
+    return {**serialize_model(role), "permission_codes": []}
+
+
+@app.patch("/api/v1/roles/{role_id}")
+def update_role(role_id: UUID, data: RoleUpdate, db: Session = Depends(get_db), user: User = Depends(require_permission("users.write"))) -> dict:
+    role = db.get(Role, role_id)
+    if not role or role.deleted_at:
+        raise HTTPException(status_code=404, detail="Role not found")
+    old_data = serialize_model(role)
+    values = data.model_dump(exclude_unset=True)
+    if "code" in values and values["code"] is not None:
+        new_code = values["code"].strip().lower().replace(" ", "_")
+        if not new_code:
+            raise HTTPException(status_code=400, detail="Role code is required")
+        exists = db.scalar(select(Role).where(Role.code == new_code, Role.id != role_id, Role.deleted_at.is_(None)))
+        if exists:
+            raise HTTPException(status_code=409, detail="Role code already exists")
+        role.code = new_code
+    if "name" in values and values["name"] is not None:
+        role.name = values["name"].strip()
+    if "description" in values:
+        role.description = values["description"]
+    role.updated_by = user.id
+    db.flush()
+    write_audit(db, user_id=user.id, action_type="update", entity_type="role", entity_id=role.id, old_data=old_data, new_data=serialize_model(role))
+    db.commit()
+    return serialize_model(role)
+
+
+@app.delete("/api/v1/roles/{role_id}")
+def delete_role(role_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("users.write"))) -> dict:
+    role = db.get(Role, role_id)
+    if not role or role.deleted_at:
+        raise HTTPException(status_code=404, detail="Role not found")
+    if role.code == "admin":
+        raise HTTPException(status_code=400, detail="Admin role cannot be deleted")
+    user_count = db.scalar(select(func.count()).select_from(User).where(User.role_id == role_id, User.deleted_at.is_(None))) or 0
+    if user_count:
+        raise HTTPException(status_code=400, detail="Role is still assigned to users")
+    return soft_delete_entity(db, entity=role, user=user, entity_type="role")
 
 
 @app.get("/api/v1/permissions")

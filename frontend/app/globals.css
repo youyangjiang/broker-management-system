@@ -343,6 +343,18 @@ textarea {
   margin: 16px 0;
 }
 
+.permission-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcfd;
+}
+
+.permission-section h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
