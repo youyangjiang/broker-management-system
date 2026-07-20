@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EntityDetail } from "../../components/EntityDetail";
 import { Shell } from "../../components/Shell";
+import { OpportunityDeleteButton } from "./OpportunityDeleteButton";
 import { OpportunityRequirements } from "./OpportunityRequirements";
 
 export default async function OpportunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -13,6 +14,7 @@ export default async function OpportunityDetailPage({ params }: { params: Promis
           <Link className="button secondary" href={`/tasks/new?opportunity_id=${id}`}>创建任务 / Criar tarefa</Link>
           <Link className="button secondary" href={`/activities/new?opportunity_id=${id}`}>记录活动 / Registrar atividade</Link>
           <Link className="button secondary" href="/opportunities">返回商机列表 / Voltar</Link>
+          <OpportunityDeleteButton opportunityId={id} />
         </div>
         <EntityDetail
           endpoint={`/opportunities/${id}`}

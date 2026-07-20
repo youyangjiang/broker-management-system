@@ -453,6 +453,25 @@ def update_opportunity_status(opportunity_id: UUID, status_value: str, db: Sessi
     return update_opportunity(opportunity_id, OpportunityUpdate(status=status_value), db, user)
 
 
+@app.delete("/api/v1/opportunities/{opportunity_id}")
+def delete_opportunity(opportunity_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("opportunities.write"))) -> dict:
+    opportunity = db.get(Opportunity, opportunity_id)
+    if not opportunity or opportunity.deleted_at:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    old_data = serialize_model(opportunity)
+    deleted_at = datetime.now(timezone.utc)
+    opportunity.deleted_at = deleted_at
+    opportunity.updated_by = user.id
+    requirements = db.scalars(select(InsuranceRequirement).where(InsuranceRequirement.opportunity_id == opportunity_id, InsuranceRequirement.deleted_at.is_(None))).all()
+    for requirement in requirements:
+        requirement.deleted_at = deleted_at
+        requirement.updated_by = user.id
+    db.flush()
+    write_audit(db, user_id=user.id, action_type="delete", entity_type="opportunity", entity_id=opportunity.id, old_data=old_data, new_data=serialize_model(opportunity))
+    db.commit()
+    return {"deleted": True, "deleted_requirements": len(requirements)}
+
+
 @app.get("/api/v1/requirements")
 def list_requirements(page: int = 1, page_size: int = Query(25, le=100), search: str | None = None, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.read"))) -> dict:
     return paged_query(db, InsuranceRequirement, page=page, page_size=page_size, search=search, search_fields=["title", "requirement_code", "status"])
