@@ -1,4 +1,4 @@
-const CACHE_NAME = "huakan-care-v6";
+const CACHE_NAME = "huakan-care-v7";
 const APP_SHELL = [
   "/login",
   "/manifest.webmanifest",

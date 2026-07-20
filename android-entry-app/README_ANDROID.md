@@ -1,6 +1,6 @@
-# 华康医护安卓入口 App 打包说明
+# 华康医保安卓入口 App 打包说明
 
-这个目录是“华康医护”的 Android 入口 App。App 安装后会直接打开线上系统：
+这个目录是“华康医保”的 Android 入口 App。App 安装后会直接打开线上系统：
 
 https://hearty-alignment-production-2294.up.railway.app/login
 
