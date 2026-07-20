@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DeleteButton } from "../../components/DeleteButton";
 import { apiFetch } from "../../lib/api";
 import { applyMask, lookupCep, onlyDigits, validateMaskedValue, type FieldConfig } from "../../components/EntityCreateForm";
 
@@ -75,9 +76,9 @@ export function ClientLegalEntities({ clientId }: { clientId: string }) {
         </div>
       </div>
       <table className="table">
-        <thead><tr><th>法定名称 / Razão social</th><th>CNPJ</th><th>类型 / Tipo</th><th>城市 / Cidade</th><th>状态 / Status</th></tr></thead>
+        <thead><tr><th>法定名称 / Razão social</th><th>CNPJ</th><th>类型 / Tipo</th><th>城市 / Cidade</th><th>状态 / Status</th><th>操作 / Ação</th></tr></thead>
         <tbody>
-          {rows.map((row) => <tr key={row.id}><td>{row.legal_name}</td><td>{row.cnpj}</td><td>{row.is_headquarters === "True" || row.is_headquarters === "true" ? "总部 / Matriz" : row.unit_type || "分支 / Filial"}</td><td>{row.city || "-"}</td><td><span className="status">{row.status}</span></td></tr>)}
+          {rows.map((row) => <tr key={row.id}><td>{row.legal_name}</td><td>{row.cnpj}</td><td>{row.is_headquarters === "True" || row.is_headquarters === "true" ? "总部 / Matriz" : row.unit_type || "分支 / Filial"}</td><td>{row.city || "-"}</td><td><span className="status">{row.status}</span></td><td><DeleteButton endpoint={`/client-legal-entities/${row.id}`} label="删除 / Excluir" confirmMessage="确认删除这个 CNPJ 单位吗？ / Confirmar exclusão desta unidade CNPJ?" onDeleted={load} /></td></tr>)}
         </tbody>
       </table>
       <form className="form form-panel" onSubmit={submit}>

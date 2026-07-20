@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteButton } from "../../components/DeleteButton";
 import { EntityDetail } from "../../components/EntityDetail";
 import { Shell } from "../../components/Shell";
 import { ClientContacts } from "./ClientContacts";
@@ -15,6 +16,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <Link className="button secondary" href={`/tasks/new?client_id=${id}`}>创建任务 / Criar tarefa</Link>
           <Link className="button secondary" href={`/activities/new?client_id=${id}`}>记录活动 / Registrar atividade</Link>
           <Link className="button secondary" href="/clients">返回客户列表 / Voltar</Link>
+          <DeleteButton endpoint={`/clients/${id}`} label="删除客户 / Excluir" confirmMessage="确认删除这个客户、联系人和 CNPJ 单位吗？ / Confirmar exclusão deste cliente, contatos e unidades CNPJ?" redirectTo="/clients" />
         </div>
         <EntityDetail
           endpoint={`/clients/${id}`}

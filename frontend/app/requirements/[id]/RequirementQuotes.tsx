@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DeleteButton } from "../../components/DeleteButton";
 import { apiFetch } from "../../lib/api";
 
 export function RequirementQuotes({ requirementId }: { requirementId: string }) {
@@ -97,11 +98,14 @@ export function RequirementQuotes({ requirementId }: { requirementId: string }) 
                 <td><span className="status">{quote.status}</span></td>
                 <td>
                   {quote.status !== "accepted" ? (
-                    <button className="button" type="button" onClick={() => acceptQuote(quote.id)}>
-                      接受 / Aceitar
-                    </button>
+                    <div className="toolbar-right">
+                      <button className="button" type="button" onClick={() => acceptQuote(quote.id)}>
+                        接受 / Aceitar
+                      </button>
+                      <DeleteButton endpoint={`/quotes/${quote.id}`} label="删除 / Excluir" confirmMessage="确认删除这个报价吗？ / Confirmar exclusão desta cotação?" onDeleted={load} />
+                    </div>
                   ) : (
-                    "-"
+                    <DeleteButton endpoint={`/quotes/${quote.id}`} label="删除 / Excluir" confirmMessage="这个报价已接受，确认仍要删除吗？ / Esta cotação foi aceita. Confirmar exclusão mesmo assim?" onDeleted={load} />
                   )}
                 </td>
               </tr>

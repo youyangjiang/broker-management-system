@@ -78,6 +78,27 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def soft_delete_entity(db: Session, *, entity, user: User, entity_type: str) -> dict:
+    if not entity or entity.deleted_at:
+        raise HTTPException(status_code=404, detail=f"{entity_type} not found")
+    old_data = serialize_model(entity)
+    try:
+        entity.deleted_at = datetime.now(timezone.utc)
+        entity.updated_by = user.id
+        db.flush()
+        new_data = serialize_model(entity)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"{entity_type} delete failed: {exc.__class__.__name__}") from exc
+    try:
+        write_audit(db, user_id=user.id, action_type="delete", entity_type=entity_type, entity_id=entity.id, old_data=old_data, new_data=new_data)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+    return {"deleted": True}
+
+
 @app.post("/api/v1/auth/login", response_model=TokenResponse)
 def login(data: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     user = db.scalar(select(User).where(User.email == data.email, User.deleted_at.is_(None)))
@@ -223,6 +244,11 @@ def update_broker_partner(partner_id: UUID, data: BrokerPartnerUpdate, db: Sessi
     return serialize_model(partner)
 
 
+@app.delete("/api/v1/broker-partners/{partner_id}")
+def delete_broker_partner(partner_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(BrokerPartner, partner_id), user=user, entity_type="broker_partner")
+
+
 @app.get("/api/v1/broker-partners/{partner_id}")
 def get_broker_partner(partner_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.read"))) -> dict:
     partner = db.get(BrokerPartner, partner_id)
@@ -262,6 +288,11 @@ def update_channel_partner(partner_id: UUID, data: ChannelPartnerUpdate, db: Ses
     return serialize_model(partner)
 
 
+@app.delete("/api/v1/channel-partners/{partner_id}")
+def delete_channel_partner(partner_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(ChannelPartner, partner_id), user=user, entity_type="channel_partner")
+
+
 @app.get("/api/v1/channel-partners/{partner_id}")
 def get_channel_partner(partner_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.read"))) -> dict:
     partner = db.get(ChannelPartner, partner_id)
@@ -284,6 +315,11 @@ def create_insurer(data: InsurerCreate, db: Session = Depends(get_db), user: Use
     write_audit(db, user_id=user.id, action_type="create", entity_type="insurer", entity_id=insurer.id, old_data=None, new_data=serialize_model(insurer))
     db.commit()
     return serialize_model(insurer)
+
+
+@app.delete("/api/v1/insurers/{insurer_id}")
+def delete_insurer(insurer_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(Insurer, insurer_id), user=user, entity_type="insurer")
 
 
 @app.get("/api/v1/clients")
@@ -340,11 +376,32 @@ def delete_client(client_id: UUID, db: Session = Depends(get_db), user: User = D
     if not client or client.deleted_at:
         raise HTTPException(status_code=404, detail="Client not found")
     old_data = serialize_model(client)
-    client.deleted_at = datetime.now(timezone.utc)
-    client.updated_by = user.id
-    write_audit(db, user_id=user.id, action_type="delete", entity_type="client", entity_id=client.id, old_data=old_data, new_data=serialize_model(client))
-    db.commit()
-    return {"deleted": True}
+    try:
+        deleted_at = datetime.now(timezone.utc)
+        client.deleted_at = deleted_at
+        client.updated_by = user.id
+        contacts = db.scalars(select(ClientContact).where(ClientContact.client_id == client_id, ClientContact.deleted_at.is_(None))).all()
+        legal_entities = db.scalars(select(ClientLegalEntity).where(ClientLegalEntity.client_id == client_id, ClientLegalEntity.deleted_at.is_(None))).all()
+        for contact in contacts:
+            contact.deleted_at = deleted_at
+            contact.updated_by = user.id
+        for entity in legal_entities:
+            entity.deleted_at = deleted_at
+            entity.updated_by = user.id
+        db.flush()
+        new_data = serialize_model(client)
+        deleted_contacts = len(contacts)
+        deleted_legal_entities = len(legal_entities)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Client delete failed: {exc.__class__.__name__}") from exc
+    try:
+        write_audit(db, user_id=user.id, action_type="delete", entity_type="client", entity_id=client.id, old_data=old_data, new_data=new_data)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+    return {"deleted": True, "deleted_contacts": deleted_contacts, "deleted_legal_entities": deleted_legal_entities}
 
 
 @app.get("/api/v1/clients/{client_id}/contacts")
@@ -361,6 +418,11 @@ def create_contact(client_id: UUID, data: ContactCreate, db: Session = Depends(g
     write_audit(db, user_id=user.id, action_type="create", entity_type="client_contact", entity_id=contact.id, old_data=None, new_data=serialize_model(contact))
     db.commit()
     return serialize_model(contact)
+
+
+@app.delete("/api/v1/client-contacts/{contact_id}")
+def delete_client_contact(contact_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(ClientContact, contact_id), user=user, entity_type="client_contact")
 
 
 @app.get("/api/v1/clients/{client_id}/legal-entities")
@@ -401,6 +463,11 @@ def update_client_legal_entity(entity_id: UUID, data: ClientLegalEntityUpdate, d
     write_audit(db, user_id=user.id, action_type="update", entity_type="client_legal_entity", entity_id=entity.id, old_data=old_data, new_data=serialize_model(entity))
     db.commit()
     return serialize_model(entity)
+
+
+@app.delete("/api/v1/client-legal-entities/{entity_id}")
+def delete_client_legal_entity(entity_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(ClientLegalEntity, entity_id), user=user, entity_type="client_legal_entity")
 
 
 @app.get("/api/v1/opportunities")
@@ -520,6 +587,40 @@ def list_requirement_quotes(requirement_id: UUID, db: Session = Depends(get_db),
     return [serialize_model(row) for row in rows]
 
 
+@app.delete("/api/v1/requirements/{requirement_id}")
+def delete_requirement(requirement_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
+    requirement = db.get(InsuranceRequirement, requirement_id)
+    if not requirement or requirement.deleted_at:
+        raise HTTPException(status_code=404, detail="insurance_requirement not found")
+    old_data = serialize_model(requirement)
+    try:
+        deleted_at = datetime.now(timezone.utc)
+        requirement.deleted_at = deleted_at
+        requirement.updated_by = user.id
+        quotes = db.scalars(select(Quote).where(Quote.insurance_requirement_id == requirement_id, Quote.deleted_at.is_(None))).all()
+        assignments = db.scalars(select(RequirementAssignment).where(RequirementAssignment.insurance_requirement_id == requirement_id, RequirementAssignment.deleted_at.is_(None))).all()
+        for quote in quotes:
+            quote.deleted_at = deleted_at
+            quote.updated_by = user.id
+        for assignment in assignments:
+            assignment.deleted_at = deleted_at
+            assignment.updated_by = user.id
+        db.flush()
+        new_data = serialize_model(requirement)
+        deleted_quotes = len(quotes)
+        deleted_assignments = len(assignments)
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Requirement delete failed: {exc.__class__.__name__}") from exc
+    try:
+        write_audit(db, user_id=user.id, action_type="delete", entity_type="insurance_requirement", entity_id=requirement.id, old_data=old_data, new_data=new_data)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+    return {"deleted": True, "deleted_quotes": deleted_quotes, "deleted_assignments": deleted_assignments}
+
+
 @app.post("/api/v1/requirements/{requirement_id}/quotes")
 def create_quote(requirement_id: UUID, data: QuoteCreate, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
     quote = Quote(**data.model_dump(), insurance_requirement_id=requirement_id, quote_code=next_code(db, Quote, "quote_code", "QUO"), created_by=user.id, updated_by=user.id)
@@ -540,6 +641,11 @@ def get_quote(quote_id: UUID, db: Session = Depends(get_db), user: User = Depend
     if not quote or quote.deleted_at:
         raise HTTPException(status_code=404, detail="Quote not found")
     return serialize_model(quote)
+
+
+@app.delete("/api/v1/quotes/{quote_id}")
+def delete_quote(quote_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(Quote, quote_id), user=user, entity_type="quote")
 
 
 @app.post("/api/v1/quotes/{quote_id}/accept")
@@ -631,6 +737,11 @@ def list_assignments(requirement_id: UUID, db: Session = Depends(get_db), user: 
     return [serialize_model(row) for row in rows]
 
 
+@app.delete("/api/v1/requirement-assignments/{assignment_id}")
+def delete_assignment(assignment_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(RequirementAssignment, assignment_id), user=user, entity_type="requirement_assignment")
+
+
 @app.get("/api/v1/tasks")
 def list_tasks(page: int = 1, page_size: int = Query(25, le=100), search: str | None = None, db: Session = Depends(get_db), user: User = Depends(require_permission("tasks.read"))) -> dict:
     return paged_query(db, Task, page=page, page_size=page_size, search=search, search_fields=["title", "status", "priority"])
@@ -647,6 +758,11 @@ def get_policy(policy_id: UUID, db: Session = Depends(get_db), user: User = Depe
     if not policy or policy.deleted_at:
         raise HTTPException(status_code=404, detail="Policy not found")
     return serialize_model(policy)
+
+
+@app.delete("/api/v1/policies/{policy_id}")
+def delete_policy(policy_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(Policy, policy_id), user=user, entity_type="policy")
 
 
 @app.get("/api/v1/activities")
@@ -672,12 +788,22 @@ def get_activity(activity_id: UUID, db: Session = Depends(get_db), user: User = 
     return serialize_model(activity)
 
 
+@app.delete("/api/v1/activities/{activity_id}")
+def delete_activity(activity_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(Activity, activity_id), user=user, entity_type="activity")
+
+
 @app.get("/api/v1/tasks/{task_id}")
 def get_task(task_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("tasks.read"))) -> dict:
     task = db.get(Task, task_id)
     if not task or task.deleted_at:
         raise HTTPException(status_code=404, detail="Task not found")
     return serialize_model(task)
+
+
+@app.delete("/api/v1/tasks/{task_id}")
+def delete_task(task_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("tasks.write"))) -> dict:
+    return soft_delete_entity(db, entity=db.get(Task, task_id), user=user, entity_type="task")
 
 
 @app.post("/api/v1/tasks")

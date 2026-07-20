@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DeleteButton } from "../../components/DeleteButton";
 import { apiFetch } from "../../lib/api";
 
 export function RequirementAssignments({ requirementId }: { requirementId: string }) {
@@ -61,6 +62,7 @@ export function RequirementAssignments({ requirementId }: { requirementId: strin
             <th>预计报价日 / Previsão da cotação</th>
             <th>状态 / Status</th>
             <th>备注 / Observações</th>
+            <th>操作 / Ação</th>
           </tr>
         </thead>
         <tbody>
@@ -73,6 +75,7 @@ export function RequirementAssignments({ requirementId }: { requirementId: strin
                 <td>{assignment.expected_quote_date || "-"}</td>
                 <td><span className="status">{assignment.status}</span></td>
                 <td>{assignment.internal_notes || "-"}</td>
+                <td><DeleteButton endpoint={`/requirement-assignments/${assignment.id}`} label="删除 / Excluir" confirmMessage="确认删除这条分配记录吗？ / Confirmar exclusão desta distribuição?" onDeleted={load} /></td>
               </tr>
             );
           })}
