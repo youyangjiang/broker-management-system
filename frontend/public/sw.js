@@ -1,5 +1,5 @@
-const CACHE_NAME = "broker-entry-v1";
-const APP_SHELL = ["/login", "/manifest.webmanifest", "/icons/app-icon.svg"];
+const CACHE_NAME = "huakan-entry-v2";
+const APP_SHELL = ["/login", "/manifest.webmanifest", "/icons/app-icon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

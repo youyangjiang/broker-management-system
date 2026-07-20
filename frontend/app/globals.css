@@ -61,7 +61,7 @@ textarea {
 
 .brand-logo {
   width: 100%;
-  max-width: 220px;
+  max-width: 360px;
 }
 
 .brand-logo svg {
@@ -71,7 +71,7 @@ textarea {
 }
 
 .brand-logo.compact-logo {
-  max-width: 168px;
+  max-width: 220px;
 }
 
 .nav {
@@ -285,7 +285,7 @@ textarea {
 }
 
 .login-box .brand-logo {
-  max-width: 260px;
+  max-width: 360px;
   margin-bottom: 22px;
 }
 
