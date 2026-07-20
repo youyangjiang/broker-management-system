@@ -1,0 +1,19 @@
+{
+  "name": "保险经纪业务管理系统 / Sistema de Seguros",
+  "short_name": "保险经纪",
+  "description": "鼎立保险经纪业务管理系统移动入口",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f7",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

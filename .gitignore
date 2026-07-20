@@ -10,3 +10,7 @@ frontend/.next/
 frontend/out/
 frontend/.env*.local
 *.tsbuildinfo
+android-entry-app/.gradle/
+android-entry-app/app/build/
+android-entry-app/build/
+android-entry-app/local.properties
