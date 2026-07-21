@@ -2,8 +2,9 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy import event, func, or_, select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.models import AuditLog
 
@@ -28,17 +29,32 @@ def write_audit(
     new_data: dict[str, Any] | None,
     source_channel: str = "web",
 ) -> None:
-    db.add(
-        AuditLog(
-            user_id=user_id,
-            action_type=action_type,
-            entity_type=entity_type,
-            entity_id=entity_id,
-            old_data=old_data,
-            new_data=new_data,
-            source_channel=source_channel,
-        )
+    audit_payload = dict(
+        user_id=user_id,
+        action_type=action_type,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        old_data=old_data,
+        new_data=new_data,
+        source_channel=source_channel,
     )
+    bind = db.get_bind()
+    if bind.dialect.name == "sqlite":
+        db.add(AuditLog(**audit_payload))
+        return
+
+    def write_after_commit(session: Session) -> None:
+        AuditSession = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
+        audit_db = AuditSession()
+        try:
+            audit_db.add(AuditLog(**audit_payload))
+            audit_db.commit()
+        except SQLAlchemyError:
+            audit_db.rollback()
+        finally:
+            audit_db.close()
+
+    event.listen(db, "after_commit", write_after_commit, once=True)
 
 
 def next_code(db: Session, model: Any, field_name: str, prefix: str) -> str:
@@ -56,4 +72,3 @@ def paged_query(db: Session, model: Any, *, page: int, page_size: int, search: s
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = db.scalars(stmt.order_by(model.created_at.desc()).offset((page - 1) * page_size).limit(page_size)).all()
     return {"items": [serialize_model(row) for row in rows], "total": total, "page": page, "page_size": page_size}
-
