@@ -36,6 +36,7 @@ from app.models import (
 from app.schemas import (
     AssignmentCreate,
     ActivityCreate,
+    ActivityUpdate,
     BrokerPartnerCreate,
     BrokerPartnerUpdate,
     ChannelPartnerCreate,
@@ -49,6 +50,7 @@ from app.schemas import (
     LoginRequest,
     OpportunityCreate,
     OpportunityUpdate,
+    PolicyUpdate,
     RequirementCreate,
     RequirementUpdate,
     QuoteAcceptRequest,
@@ -183,6 +185,18 @@ def update_user(target_user_id: UUID, data: UserUpdate, db: Session = Depends(ge
     write_audit(db, user_id=user.id, action_type="update", entity_type="user", entity_id=target.id, old_data=old_data, new_data=serialize_model(target))
     db.commit()
     return serialize_model(target)
+
+
+@app.delete("/api/v1/users/{target_user_id}")
+def delete_user(target_user_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("users.write"))) -> dict:
+    if target_user_id == user.id:
+        raise HTTPException(status_code=400, detail="Current user cannot be deleted")
+    target = db.get(User, target_user_id)
+    if target and target.role and target.role.code == "admin":
+        active_admins = db.scalar(select(func.count()).select_from(User).join(Role, User.role_id == Role.id).where(Role.code == "admin", User.status == "active", User.deleted_at.is_(None))) or 0
+        if active_admins <= 1:
+            raise HTTPException(status_code=400, detail="Last active admin cannot be deleted")
+    return soft_delete_entity(db, entity=target, user=user, entity_type="user")
 
 
 @app.get("/api/v1/roles")
@@ -885,6 +899,21 @@ def delete_policy(policy_id: UUID, db: Session = Depends(get_db), user: User = D
     return soft_delete_entity(db, entity=db.get(Policy, policy_id), user=user, entity_type="policy")
 
 
+@app.patch("/api/v1/policies/{policy_id}")
+def update_policy(policy_id: UUID, data: PolicyUpdate, db: Session = Depends(get_db), user: User = Depends(require_permission("requirements.write"))) -> dict:
+    policy = db.get(Policy, policy_id)
+    if not policy or policy.deleted_at:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    old_data = serialize_model(policy)
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(policy, key, value)
+    policy.updated_by = user.id
+    db.flush()
+    write_audit(db, user_id=user.id, action_type="update", entity_type="policy", entity_id=policy.id, old_data=old_data, new_data=serialize_model(policy))
+    db.commit()
+    return serialize_model(policy)
+
+
 @app.get("/api/v1/activities")
 def list_activities(page: int = 1, page_size: int = Query(25, le=100), search: str | None = None, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.read"))) -> dict:
     return paged_query(db, Activity, page=page, page_size=page_size, search=search, search_fields=["subject", "activity_type", "outcome"])
@@ -911,6 +940,21 @@ def get_activity(activity_id: UUID, db: Session = Depends(get_db), user: User = 
 @app.delete("/api/v1/activities/{activity_id}")
 def delete_activity(activity_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.write"))) -> dict:
     return soft_delete_entity(db, entity=db.get(Activity, activity_id), user=user, entity_type="activity")
+
+
+@app.patch("/api/v1/activities/{activity_id}")
+def update_activity(activity_id: UUID, data: ActivityUpdate, db: Session = Depends(get_db), user: User = Depends(require_permission("clients.write"))) -> dict:
+    activity = db.get(Activity, activity_id)
+    if not activity or activity.deleted_at:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    old_data = serialize_model(activity)
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(activity, key, value)
+    activity.updated_by = user.id
+    db.flush()
+    write_audit(db, user_id=user.id, action_type="update", entity_type="activity", entity_id=activity.id, old_data=old_data, new_data=serialize_model(activity))
+    db.commit()
+    return serialize_model(activity)
 
 
 @app.get("/api/v1/tasks/{task_id}")

@@ -10,7 +10,7 @@ export default function UsersPage() {
         <DataTable
           endpoint="/users"
           createHref="/users/new"
-          rowHref={(item) => `/users/${item.id}/edit`}
+          rowHref={(item) => `/users/${item.id}`}
           columns={[
             { key: "full_name", label: "姓名 / Nome" },
             { key: "email", label: "邮箱 / E-mail" },

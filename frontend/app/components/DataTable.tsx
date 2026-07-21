@@ -26,6 +26,20 @@ export function DataTable({ endpoint, columns, createHref, rowHref }: { endpoint
     return () => clearTimeout(timer);
   }, [endpoint, search]);
 
+  function valueFor(item: Record<string, string>, key: string) {
+    return item[key] || "-";
+  }
+
+  function compactColumns() {
+    const codeColumn = columns.find((column) => column.key.includes("code") || column.key.endsWith("_number"));
+    const statusColumn = columns.find((column) => column.key === "status");
+    const primaryColumn = columns.find((column) => column !== codeColumn && column.key !== "status") || columns[0];
+    const metaColumns = columns.filter((column) => column !== primaryColumn && column !== statusColumn).slice(0, 3);
+    return { codeColumn, metaColumns, primaryColumn, statusColumn };
+  }
+
+  const { codeColumn, metaColumns, primaryColumn, statusColumn } = compactColumns();
+
   return (
     <div className="panel">
       <div className="toolbar">
@@ -36,16 +50,25 @@ export function DataTable({ endpoint, columns, createHref, rowHref }: { endpoint
         {createHref ? <button className="button" onClick={() => router.push(createHref)}>新增 / Novo</button> : null}
       </div>
       {error ? <p className="error" style={{ padding: 14 }}>{error}</p> : null}
-      <table className="table mobile-card-table">
-        <thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
-        <tbody>
-          {(data?.items || []).map((item) => (
-            <tr key={item.id} className={rowHref ? "clickable" : undefined} onClick={() => rowHref && router.push(rowHref(item))}>
-              {columns.map((column) => <td key={column.key} data-label={column.label}>{column.key === "status" ? <span className="status">{item[column.key]}</span> : item[column.key] || "-"}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="record-list">
+        {(data?.items || []).map((item) => (
+          <button key={item.id} className={`record-row ${rowHref ? "clickable" : ""}`} type="button" onClick={() => rowHref && router.push(rowHref(item))} disabled={!rowHref}>
+            <span className="record-main">
+              <strong>{valueFor(item, primaryColumn.key)}</strong>
+              {codeColumn ? <span>{valueFor(item, codeColumn.key)}</span> : null}
+            </span>
+            <span className="record-meta">
+              {metaColumns.map((column) => (
+                <span key={column.key}>
+                  <em>{column.label}</em>
+                  {valueFor(item, column.key)}
+                </span>
+              ))}
+            </span>
+            {statusColumn ? <span className="status record-status">{valueFor(item, statusColumn.key)}</span> : null}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

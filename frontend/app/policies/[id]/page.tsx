@@ -9,6 +9,7 @@ export default async function PolicyDetailPage({ params }: { params: Promise<{ i
     <Shell title="保单详情 / Detalhes da apólice">
       <div className="stack">
         <div className="toolbar-right">
+          <Link className="button" href={`/policies/${id}/edit`}>编辑保单 / Editar</Link>
           <Link className="button secondary" href="/policies">返回保单列表 / Voltar</Link>
           <DeleteButton endpoint={`/policies/${id}`} label="删除保单 / Excluir" confirmMessage="确认删除这张保单吗？ / Confirmar exclusão desta apólice?" redirectTo="/policies" />
         </div>

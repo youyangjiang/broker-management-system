@@ -286,6 +286,90 @@ textarea {
   font-size: 13px;
 }
 
+.record-list {
+  display: grid;
+}
+
+.record-row {
+  width: 100%;
+  min-height: 60px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: white;
+  color: inherit;
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) minmax(0, 2fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.record-row:last-child {
+  border-bottom: 0;
+}
+
+.record-row.clickable {
+  cursor: pointer;
+}
+
+.record-row.clickable:hover {
+  background: #f8fafb;
+}
+
+.record-row:disabled {
+  cursor: default;
+}
+
+.record-main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.record-main strong,
+.record-main span,
+.record-meta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-main strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.record-main span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.record-meta {
+  min-width: 0;
+  display: flex;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.record-meta span {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.record-meta em {
+  color: #8a94a4;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.record-status {
+  justify-self: end;
+  max-width: 160px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -596,63 +680,33 @@ textarea {
     border-radius: 8px;
   }
 
-  .panel {
-    overflow-x: auto;
+  .record-row {
+    min-height: 62px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "main status"
+      "meta meta";
+    gap: 5px 10px;
+    padding: 9px 12px;
   }
 
-  .table {
-    min-width: 680px;
+  .record-main {
+    grid-area: main;
   }
 
-  .mobile-card-table {
-    min-width: 0;
-    display: block;
-  }
-
-  .mobile-card-table thead {
-    display: none;
-  }
-
-  .mobile-card-table tbody {
-    display: grid;
+  .record-meta {
+    grid-area: meta;
     gap: 10px;
-    padding: 10px;
+    overflow: hidden;
   }
 
-  .mobile-card-table tr {
-    display: grid;
-    gap: 8px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: white;
-    padding: 10px;
+  .record-meta span {
+    max-width: 33%;
   }
 
-  .mobile-card-table td {
-    display: grid;
-    grid-template-columns: minmax(104px, 40%) minmax(0, 1fr);
-    gap: 10px;
-    align-items: start;
-    border: 0;
-    padding: 0;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .mobile-card-table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.3;
-  }
-
-  .mobile-card-table td:not([data-label]) {
-    grid-template-columns: 1fr;
-  }
-
-  .mobile-card-table td:not([data-label])::before {
-    display: none;
+  .record-status {
+    grid-area: status;
+    max-width: 112px;
   }
 
   .login-page {

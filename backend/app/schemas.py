@@ -402,6 +402,20 @@ class QuoteAcceptRequest(BaseModel):
     renewal_reminder_date: date | None = None
 
 
+class PolicyUpdate(BaseModel):
+    policy_number: str | None = None
+    premium_total: Decimal | None = None
+    commission_rate: Decimal | None = None
+    total_commission_amount: Decimal | None = None
+    our_share_rate: Decimal | None = None
+    expected_our_commission: Decimal | None = None
+    policy_start_date: date | None = None
+    policy_end_date: date | None = None
+    status: str | None = None
+    renewal_status: str | None = None
+    renewal_reminder_date: date | None = None
+
+
 class TaskCreate(BaseModel):
     title: str
     description: str | None = None
@@ -434,6 +448,19 @@ class ActivityCreate(BaseModel):
     subject: str
     description: str | None = None
     activity_date: datetime
+    outcome: str | None = None
+    next_action: str | None = None
+    next_action_date: date | None = None
+
+
+class ActivityUpdate(BaseModel):
+    activity_type: str | None = None
+    client_id: UUID | None = None
+    opportunity_id: UUID | None = None
+    insurance_requirement_id: UUID | None = None
+    subject: str | None = None
+    description: str | None = None
+    activity_date: datetime | None = None
     outcome: str | None = None
     next_action: str | None = None
     next_action_date: date | None = None

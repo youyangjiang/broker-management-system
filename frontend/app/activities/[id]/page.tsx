@@ -9,6 +9,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
     <Shell title="活动详情 / Detalhes da atividade">
       <div className="stack">
         <div className="toolbar-right">
+          <Link className="button" href={`/activities/${id}/edit`}>编辑活动 / Editar</Link>
           <Link className="button secondary" href="/activities">返回活动列表 / Voltar</Link>
           <DeleteButton endpoint={`/activities/${id}`} label="删除活动 / Excluir" confirmMessage="确认删除这条活动记录吗？ / Confirmar exclusão desta atividade?" redirectTo="/activities" />
         </div>
