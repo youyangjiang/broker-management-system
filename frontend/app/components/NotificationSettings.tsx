@@ -4,10 +4,13 @@ import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
 
-const PUBLIC_VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+type NotificationConfig = {
+  vapid_public_key: string;
+  configured: boolean;
+};
 
 function urlBase64ToUint8Array(value: string) {
-  const padding = "=".repeat((4 - value.length % 4) % 4);
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
@@ -17,11 +20,15 @@ export function NotificationSettings() {
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [message, setMessage] = useState("");
+  const [config, setConfig] = useState<NotificationConfig | null>(null);
 
   useEffect(() => {
     const isSupported = "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
     setSupported(isSupported);
     if (isSupported) setPermission(Notification.permission);
+    apiFetch<NotificationConfig>("/notifications/config")
+      .then(setConfig)
+      .catch(() => setMessage("无法读取推送配置 / Falha ao carregar configuração de push"));
   }, []);
 
   async function enableNotifications() {
@@ -36,21 +43,20 @@ export function NotificationSettings() {
       return;
     }
 
-    const registration = await navigator.serviceWorker.ready;
-    if (!PUBLIC_VAPID_KEY) {
-      registration.showNotification("华康医保", {
-        body: "本机通知已开启。服务器推送需要配置 VAPID 密钥。",
-        icon: "/icons/icon-192-v2.png",
-        badge: "/icons/icon-192-v2.png"
-      });
-      setMessage("本机通知已开启；服务器推送待配置 / Notificação local ativa; push do servidor pendente");
+    if (!config?.configured || !config.vapid_public_key) {
+      setMessage("服务器推送密钥尚未配置完成 / Chaves de push ainda não configuradas");
       return;
     }
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
-    });
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    const subscription =
+      existing ||
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(config.vapid_public_key)
+      }));
+
     await apiFetch("/notifications/subscriptions", { method: "POST", body: JSON.stringify(subscription.toJSON()) });
     setMessage("通知推送已开启 / Notificações ativadas");
   }

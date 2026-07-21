@@ -317,6 +317,14 @@ def list_push_subscriptions(db: Session = Depends(get_db), user: User = Depends(
     return [serialize_model(row) for row in rows]
 
 
+@app.get("/api/v1/notifications/config")
+def notification_config(user: User = Depends(current_user)) -> dict:
+    return {
+        "vapid_public_key": settings.vapid_public_key,
+        "configured": bool(settings.vapid_public_key and settings.vapid_private_key),
+    }
+
+
 @app.post("/api/v1/notifications/test")
 def send_test_notification(data: NotificationSendRequest, db: Session = Depends(get_db), user: User = Depends(current_user)) -> dict:
     if not webpush or not settings.vapid_public_key or not settings.vapid_private_key:
