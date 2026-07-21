@@ -12,7 +12,8 @@ export function DataTable({ endpoint, columns, createHref, rowHref }: { endpoint
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      apiFetch<PageResult | Record<string, string>[]>(`${endpoint}?search=${encodeURIComponent(search)}`)
+      const separator = endpoint.includes("?") ? "&" : "?";
+      apiFetch<PageResult | Record<string, string>[]>(`${endpoint}${separator}search=${encodeURIComponent(search)}`)
         .then((result) => {
           if (Array.isArray(result)) {
             const filtered = search ? result.filter((item) => Object.values(item).some((value) => String(value || "").toLowerCase().includes(search.toLowerCase()))) : result;

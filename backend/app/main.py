@@ -877,8 +877,23 @@ def delete_assignment(assignment_id: UUID, db: Session = Depends(get_db), user: 
 
 
 @app.get("/api/v1/tasks")
-def list_tasks(page: int = 1, page_size: int = Query(25, le=100), search: str | None = None, db: Session = Depends(get_db), user: User = Depends(require_permission("tasks.read"))) -> dict:
-    return paged_query(db, Task, page=page, page_size=page_size, search=search, search_fields=["title", "status", "priority"])
+def list_tasks(bucket: str = "open", page: int = 1, page_size: int = Query(100, le=100), search: str | None = None, db: Session = Depends(get_db), user: User = Depends(require_permission("tasks.read"))) -> dict:
+    now = datetime.now(timezone.utc)
+    stmt = select(Task).where(Task.deleted_at.is_(None))
+    if bucket == "open":
+        stmt = stmt.where(Task.status == "open", (Task.due_date.is_(None)) | (Task.due_date >= now))
+    elif bucket == "in_progress":
+        stmt = stmt.where(Task.status == "in_progress", (Task.due_date.is_(None)) | (Task.due_date >= now))
+    elif bucket == "overdue":
+        stmt = stmt.where(Task.status != "done", Task.due_date.is_not(None), Task.due_date < now)
+    elif bucket == "done":
+        stmt = stmt.where(Task.status == "done")
+    if search:
+        like = f"%{search}%"
+        stmt = stmt.where((Task.title.ilike(like)) | (Task.status.ilike(like)) | (Task.priority.ilike(like)))
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    rows = db.scalars(stmt.order_by(Task.due_date.is_(None), Task.due_date.asc(), Task.created_at.desc()).offset((page - 1) * page_size).limit(page_size)).all()
+    return {"items": [serialize_model(row) for row in rows], "total": total, "page": page, "page_size": page_size}
 
 
 @app.get("/api/v1/policies")
