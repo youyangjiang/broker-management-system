@@ -54,6 +54,15 @@ def validate_br_fields(value: str | None, field_name: str) -> str | None:
     return value
 
 
+def normalize_rate(value: Decimal | int | float | str | None) -> Decimal | None:
+    if value in (None, ""):
+        return None
+    rate = Decimal(str(value))
+    if rate > 1:
+        rate = rate / Decimal("100")
+    return rate
+
+
 class BrazilianFieldsMixin(BaseModel):
     @field_validator("postal_code", "cpf", "cnpj", "phone", "whatsapp", check_fields=False)
     @classmethod
@@ -246,6 +255,11 @@ class BrokerPartnerCreate(BrazilianFieldsMixin):
     status: str = "active"
     notes: str | None = None
 
+    @field_validator("default_commission_share_rate", mode="before")
+    @classmethod
+    def normalize_share_rate(cls, value):
+        return normalize_rate(value)
+
 
 class BrokerPartnerUpdate(BrokerPartnerCreate):
     legal_name: str | None = None
@@ -272,6 +286,11 @@ class ChannelPartnerCreate(BrazilianFieldsMixin):
     importance_level: str | None = None
     maintenance_frequency_days: int | None = None
     status: str = "active"
+
+    @field_validator("default_share_rate", mode="before")
+    @classmethod
+    def normalize_share_rate(cls, value):
+        return normalize_rate(value)
 
 
 class ChannelPartnerUpdate(ChannelPartnerCreate):
@@ -311,6 +330,11 @@ class OpportunityCreate(BaseModel):
     next_action: str | None = None
     next_action_date: date | None = None
 
+    @field_validator("probability", mode="before")
+    @classmethod
+    def normalize_probability(cls, value):
+        return normalize_rate(value)
+
 
 class OpportunityUpdate(BaseModel):
     client_legal_entity_id: UUID | None = None
@@ -328,6 +352,11 @@ class OpportunityUpdate(BaseModel):
     expected_close_date: date | None = None
     next_action: str | None = None
     next_action_date: date | None = None
+
+    @field_validator("probability", mode="before")
+    @classmethod
+    def normalize_probability(cls, value):
+        return normalize_rate(value)
 
 
 class RequirementCreate(BaseModel):
@@ -403,6 +432,11 @@ class QuoteCreate(BaseModel):
     is_recommended: bool = False
     recommendation_reason: str | None = None
 
+    @field_validator("commission_rate", "our_share_rate", mode="before")
+    @classmethod
+    def normalize_quote_rates(cls, value):
+        return normalize_rate(value)
+
 
 class QuoteAcceptRequest(BaseModel):
     policy_number: str | None = None
@@ -423,6 +457,11 @@ class PolicyUpdate(BaseModel):
     status: str | None = None
     renewal_status: str | None = None
     renewal_reminder_date: date | None = None
+
+    @field_validator("commission_rate", "our_share_rate", mode="before")
+    @classmethod
+    def normalize_policy_rates(cls, value):
+        return normalize_rate(value)
 
 
 class TaskCreate(BaseModel):
