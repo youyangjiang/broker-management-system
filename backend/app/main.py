@@ -65,6 +65,7 @@ from app.schemas import (
     TaskUpdate,
     TokenResponse,
     UserCreate,
+    UserLanguageUpdate,
     UserOut,
     UserPermissionUpdate,
     UserUpdate,
@@ -151,6 +152,17 @@ def login(data: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
 
 @app.get("/api/v1/me", response_model=UserOut)
 def me(user: User = Depends(current_user)) -> User:
+    return user
+
+
+@app.patch("/api/v1/me/language", response_model=UserOut)
+def update_my_language(data: UserLanguageUpdate, db: Session = Depends(get_db), user: User = Depends(current_user)) -> User:
+    if data.language not in {"zh-CN", "pt-BR"}:
+        raise HTTPException(status_code=400, detail="Unsupported language")
+    user.language = data.language
+    user.updated_by = user.id
+    db.commit()
+    db.refresh(user)
     return user
 
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DataTable } from "../components/DataTable";
 import { Shell } from "../components/Shell";
+import { useLanguage } from "../components/LanguageProvider";
 
 const tabs = [
   { key: "open", label: "未完成 / Pendentes" },
@@ -12,15 +13,16 @@ const tabs = [
 ];
 
 export default function TasksPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("open");
 
   return (
     <Shell title="任务 / Tarefas">
       <div className="stack">
-        <div className="tabs" role="tablist" aria-label="任务状态 / Status da tarefa">
+        <div className="tabs" role="tablist" aria-label={t("任务状态 / Status da tarefa")}>
           {tabs.map((tab) => (
             <button key={tab.key} className={activeTab === tab.key ? "active" : ""} type="button" role="tab" aria-selected={activeTab === tab.key} onClick={() => setActiveTab(tab.key)}>
-              {tab.label}
+              {t(tab.label)}
             </button>
           ))}
         </div>

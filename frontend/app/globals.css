@@ -144,6 +144,26 @@ textarea {
   font-size: 13px;
 }
 
+.language-setting {
+  display: grid;
+  gap: 6px;
+  color: #9fb4b2;
+  font-size: 13px;
+}
+
+.language-setting select {
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 8px;
+}
+
+.language-setting option {
+  color: #111827;
+}
+
 .menu-logout {
   width: 100%;
   min-height: 40px;
@@ -446,6 +466,16 @@ textarea {
 
 .field.full {
   grid-column: 1 / -1;
+}
+
+.compact-language-field {
+  min-width: 160px;
+  text-align: left;
+}
+
+.compact-language-field span {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .detail-grid {

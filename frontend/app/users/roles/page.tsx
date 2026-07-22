@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Shell } from "../../components/Shell";
 import { groupLabels, groupPermissions, permissionLabel, type Permission } from "../../components/PermissionLabels";
+import { useLanguage } from "../../components/LanguageProvider";
 import { apiFetch } from "../../lib/api";
 
 type Role = {
@@ -39,6 +40,7 @@ function extractErrorMessage(error: unknown, fallback: string) {
 }
 
 export default function RolePermissionsPage() {
+  const { t } = useLanguage();
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
@@ -56,7 +58,7 @@ export default function RolePermissionsPage() {
   }
 
   useEffect(() => {
-    load().catch((err) => setError(extractErrorMessage(err, "加载用户组失败 / Falha ao carregar grupos")));
+    load().catch((err) => setError(extractErrorMessage(err, t("加载用户组失败 / Falha ao carregar grupos"))));
   }, []);
 
   const selectedRole = roles.find((role) => role.id === selectedRoleId);
@@ -110,15 +112,15 @@ export default function RolePermissionsPage() {
       if (isNewGroup) {
         const created = await apiFetch<Role>("/roles", { method: "POST", body: JSON.stringify(payload) });
         await load(created.id);
-        setMessage("用户组已注册，权限已保存 / Grupo cadastrado e permissões salvas");
+        setMessage(t("用户组已注册，权限已保存 / Grupo cadastrado e permissões salvas"));
       } else {
         await apiFetch(`/roles/${selectedRoleId}`, { method: "PATCH", body: JSON.stringify(payload) });
         await apiFetch(`/roles/${selectedRoleId}/permissions`, { method: "PATCH", body: JSON.stringify({ permission_codes: selectedCodes }) });
         await load(selectedRoleId);
-        setMessage("用户组和权限已保存 / Grupo e permissões salvos");
+        setMessage(t("用户组和权限已保存 / Grupo e permissões salvos"));
       }
     } catch (err) {
-      setError(extractErrorMessage(err, "保存失败 / Falha ao salvar"));
+      setError(extractErrorMessage(err, t("保存失败 / Falha ao salvar")));
     } finally {
       setSaving(false);
     }
@@ -126,7 +128,7 @@ export default function RolePermissionsPage() {
 
   async function deleteGroup() {
     if (!selectedRole || selectedRole.code === "admin") return;
-    const confirmed = window.confirm("确认停用这个用户组吗？如果已有用户使用该分组，请先把用户调整到其他分组。 / Confirmar desativação deste grupo?");
+    const confirmed = window.confirm(t("确认停用这个用户组吗？如果已有用户使用该分组，请先把用户调整到其他分组。 / Confirmar desativação deste grupo?"));
     if (!confirmed) return;
     setSaving(true);
     setMessage("");
@@ -134,9 +136,9 @@ export default function RolePermissionsPage() {
     try {
       await apiFetch(`/roles/${selectedRoleId}`, { method: "DELETE" });
       await load();
-      setMessage("用户组已停用 / Grupo desativado");
+      setMessage(t("用户组已停用 / Grupo desativado"));
     } catch (err) {
-      setError(extractErrorMessage(err, "停用失败 / Falha ao desativar"));
+      setError(extractErrorMessage(err, t("停用失败 / Falha ao desativar")));
     } finally {
       setSaving(false);
     }
@@ -148,40 +150,40 @@ export default function RolePermissionsPage() {
         <section className="panel form-panel">
           <div className="toolbar">
             <div className="toolbar-left">
-              <strong>用户组资料 / Dados do grupo</strong>
-              <span className="muted">用户组是基础权限；用户个人权限可以额外补充 / O grupo define a base de permissões</span>
+              <strong>{t("用户组资料 / Dados do grupo")}</strong>
+              <span className="muted">{t("用户组是基础权限；用户个人权限可以额外补充 / O grupo define a base de permissões")}</span>
             </div>
-            <button className="button secondary" type="button" onClick={prepareNewGroup}>新增用户组 / Novo grupo</button>
+            <button className="button secondary" type="button" onClick={prepareNewGroup}>{t("新增用户组 / Novo grupo")}</button>
           </div>
 
           <form className="form-grid" onSubmit={submitGroup}>
             <div className="field">
-              <label>选择现有用户组 / Selecionar grupo</label>
+              <label>{t("选择现有用户组 / Selecionar grupo")}</label>
               <select value={selectedRoleId} onChange={(event) => chooseRoleFromRows(event.target.value)}>
-                <option value="">新增用户组 / Novo grupo</option>
+                <option value="">{t("新增用户组 / Novo grupo")}</option>
                 {roles.map((role) => <option key={role.id} value={role.id}>{role.name || role.code}</option>)}
               </select>
             </div>
             <div className="field">
-              <label>用户组代码 / Código do grupo</label>
+              <label>{t("用户组代码 / Código do grupo")}</label>
               <input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="sales_manager" required disabled={selectedRole?.code === "admin"} />
             </div>
             <div className="field">
-              <label>用户组名称 / Nome do grupo</label>
+              <label>{t("用户组名称 / Nome do grupo")}</label>
               <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="业务经理 / Gerente comercial" required />
             </div>
             <div className="field">
-              <label>已选权限 / Permissões selecionadas</label>
+              <label>{t("已选权限 / Permissões selecionadas")}</label>
               <input value={`${selectedCodes.length} / ${permissions.length}`} readOnly />
             </div>
             <div className="field full">
-              <label>说明 / Descrição</label>
-              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="例如：负责客户、商机和任务管理 / Ex.: gestão de clientes, oportunidades e tarefas" />
+              <label>{t("说明 / Descrição")}</label>
+              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t("例如：负责客户、商机和任务管理 / Ex.: gestão de clientes, oportunidades e tarefas")} />
             </div>
             <div className="toolbar-right field full">
-              <button className="button" type="submit" disabled={saving}>{saving ? "保存中 / Salvando" : isNewGroup ? "注册用户组并保存权限 / Cadastrar grupo" : "保存用户组权限 / Salvar permissões"}</button>
-              <button className="button secondary" type="button" onClick={prepareNewGroup}>清空 / Limpar</button>
-              <button className="button danger" type="button" onClick={deleteGroup} disabled={saving || !selectedRole || selectedRole.code === "admin"}>停用用户组 / Desativar grupo</button>
+              <button className="button" type="submit" disabled={saving}>{saving ? t("保存中 / Salvando") : isNewGroup ? t("注册用户组并保存权限 / Cadastrar grupo") : t("保存用户组权限 / Salvar permissões")}</button>
+              <button className="button secondary" type="button" onClick={prepareNewGroup}>{t("清空 / Limpar")}</button>
+              <button className="button danger" type="button" onClick={deleteGroup} disabled={saving || !selectedRole || selectedRole.code === "admin"}>{t("停用用户组 / Desativar grupo")}</button>
             </div>
           </form>
           {message ? <p className="muted">{message}</p> : null}
@@ -191,8 +193,8 @@ export default function RolePermissionsPage() {
         <section className="panel form-panel">
           <div className="toolbar">
             <div className="toolbar-left">
-              <strong>组权限设置 / Permissões do grupo</strong>
-              <span className="muted">{selectedRole ? `${selectedRole.name} (${selectedRole.code})` : "正在注册新用户组 / Cadastrando novo grupo"}</span>
+              <strong>{t("组权限设置 / Permissões do grupo")}</strong>
+              <span className="muted">{selectedRole ? `${selectedRole.name} (${selectedRole.code})` : t("正在注册新用户组 / Cadastrando novo grupo")}</span>
             </div>
           </div>
           <div className="stack">
@@ -202,17 +204,17 @@ export default function RolePermissionsPage() {
               return (
                 <div key={group} className="permission-section">
                   <div className="toolbar">
-                    <h3>{groupLabels[group] || groupLabels.other}</h3>
+                    <h3>{t(groupLabels[group] || groupLabels.other)}</h3>
                     <label className="checkbox-row compact">
                       <input type="checkbox" checked={allChecked} onChange={(event) => setGroupCodes(groupCodes, event.target.checked)} />
-                      <span>本组全选 / Selecionar grupo</span>
+                      <span>{t("本组全选 / Selecionar grupo")}</span>
                     </label>
                   </div>
                   <div className="permission-grid">
                     {groupItems.map((permission) => (
                       <label key={permission.code} className="checkbox-row">
                         <input type="checkbox" checked={selectedCodes.includes(permission.code)} onChange={() => toggle(permission.code)} />
-                        <span>{permissionLabel(permission)}</span>
+                        <span>{t(permissionLabel(permission))}</span>
                       </label>
                     ))}
                   </div>

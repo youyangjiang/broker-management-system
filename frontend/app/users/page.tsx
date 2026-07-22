@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { DataTable } from "../components/DataTable";
 import { Shell } from "../components/Shell";
+import { useLanguage } from "../components/LanguageProvider";
 
 export default function UsersPage() {
+  const { t } = useLanguage();
   return (
     <Shell title="用户与用户组权限 / Usuários e grupos de permissões">
       <div className="stack">
@@ -18,7 +21,7 @@ export default function UsersPage() {
             { key: "status", label: "状态 / Status" }
           ]}
         />
-        <a className="button secondary" href="/users/roles">用户组注册和权限设置 / Cadastro de grupos e permissões</a>
+        <Link className="button secondary" href="/users/roles">{t("用户组注册和权限设置 / Cadastro de grupos e permissões")}</Link>
       </div>
     </Shell>
   );

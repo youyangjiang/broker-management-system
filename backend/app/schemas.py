@@ -78,6 +78,7 @@ class UserOut(BaseModel):
     email: EmailStr
     status: str
     role_id: UUID | None = None
+    language: str | None = None
 
 
 class Page(BaseModel):
@@ -107,6 +108,10 @@ class UserUpdate(BrazilianFieldsMixin):
     status: str | None = None
     language: str | None = None
     timezone: str | None = None
+
+
+class UserLanguageUpdate(BaseModel):
+    language: str
 
 
 class RolePermissionUpdate(BaseModel):

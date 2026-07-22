@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
 import { groupLabels, groupPermissions, permissionLabel, type Permission } from "./PermissionLabels";
+import { useLanguage } from "./LanguageProvider";
 
 type UserPermissionData = {
   id: string;
@@ -26,6 +27,7 @@ function extractErrorMessage(error: unknown, fallback: string) {
 }
 
 export function UserPermissionEditor({ userId }: { userId: string }) {
+  const { t } = useLanguage();
   const [data, setData] = useState<UserPermissionData | null>(null);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [message, setMessage] = useState("");
@@ -39,7 +41,7 @@ export function UserPermissionEditor({ userId }: { userId: string }) {
   }
 
   useEffect(() => {
-    load().catch((err) => setError(extractErrorMessage(err, "加载用户权限失败 / Falha ao carregar permissões")));
+    load().catch((err) => setError(extractErrorMessage(err, t("加载用户权限失败 / Falha ao carregar permissões"))));
   }, [userId]);
 
   const permissions = data?.all_permissions || [];
@@ -68,44 +70,44 @@ export function UserPermissionEditor({ userId }: { userId: string }) {
         body: JSON.stringify({ permission_codes: selectedCodes })
       });
       await load();
-      setMessage("用户个人权限已保存 / Permissões individuais salvas");
+      setMessage(t("用户个人权限已保存 / Permissões individuais salvas"));
     } catch (err) {
-      setError(extractErrorMessage(err, "保存用户权限失败 / Falha ao salvar permissões"));
+      setError(extractErrorMessage(err, t("保存用户权限失败 / Falha ao salvar permissões")));
     } finally {
       setSaving(false);
     }
   }
 
   if (error && !data) return <section className="panel form-panel error">{error}</section>;
-  if (!data) return <section className="panel form-panel muted">加载用户权限 / Carregando permissões</section>;
+  if (!data) return <section className="panel form-panel muted">{t("加载用户权限 / Carregando permissões")}</section>;
 
   return (
     <section className="panel form-panel">
       <div className="toolbar">
         <div className="toolbar-left">
-          <strong>用户个人权限 / Permissões individuais</strong>
-          <span className="muted">用户权限高于用户组权限；这里勾选的是额外授权 / Permissões do usuário complementam o grupo</span>
+          <strong>{t("用户个人权限 / Permissões individuais")}</strong>
+          <span className="muted">{t("用户权限高于用户组权限；这里勾选的是额外授权 / Permissões do usuário complementam o grupo")}</span>
         </div>
         <button className="button" type="button" onClick={save} disabled={saving}>
-          {saving ? "保存中 / Salvando" : "保存个人权限 / Salvar permissões"}
+          {saving ? t("保存中 / Salvando") : t("保存个人权限 / Salvar permissões")}
         </button>
       </div>
 
       <div className="detail-grid permission-summary">
         <div className="detail-item">
-          <span>用户组 / Grupo</span>
+          <span>{t("用户组 / Grupo")}</span>
           <strong>{data.role_name || "-"}</strong>
         </div>
         <div className="detail-item">
-          <span>用户组权限 / Permissões do grupo</span>
+          <span>{t("用户组权限 / Permissões do grupo")}</span>
           <strong>{roleCodes.length}</strong>
         </div>
         <div className="detail-item">
-          <span>个人额外权限 / Permissões individuais</span>
+          <span>{t("个人额外权限 / Permissões individuais")}</span>
           <strong>{selectedCodes.length}</strong>
         </div>
         <div className="detail-item">
-          <span>最终生效权限 / Permissões efetivas</span>
+          <span>{t("最终生效权限 / Permissões efetivas")}</span>
           <strong>{effectiveCodes.length}</strong>
         </div>
       </div>
@@ -117,10 +119,10 @@ export function UserPermissionEditor({ userId }: { userId: string }) {
           return (
             <div key={group} className="permission-section">
               <div className="toolbar">
-                <h3>{groupLabels[group] || groupLabels.other}</h3>
+                <h3>{t(groupLabels[group] || groupLabels.other)}</h3>
                 <label className="checkbox-row compact">
                   <input type="checkbox" checked={allChecked} onChange={(event) => setGroupCodes(groupCodes, event.target.checked)} />
-                  <span>本组全选 / Selecionar grupo</span>
+                  <span>{t("本组全选 / Selecionar grupo")}</span>
                 </label>
               </div>
               <div className="permission-grid">
@@ -130,7 +132,7 @@ export function UserPermissionEditor({ userId }: { userId: string }) {
                   return (
                     <label key={permission.code} className={`checkbox-row ${fromRole ? "permission-inherited" : ""}`}>
                       <input type="checkbox" checked={checked} onChange={() => toggle(permission.code)} />
-                      <span>{permissionLabel(permission)}{fromRole ? " · 组已有 / Do grupo" : ""}</span>
+                      <span>{t(permissionLabel(permission))}{fromRole ? ` · ${t("组已有 / Do grupo")}` : ""}</span>
                     </label>
                   );
                 })}

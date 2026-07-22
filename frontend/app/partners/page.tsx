@@ -2,13 +2,15 @@
 
 import { DataTable } from "../components/DataTable";
 import { Shell } from "../components/Shell";
+import { useLanguage } from "../components/LanguageProvider";
 
 export default function PartnersPage() {
+  const { t } = useLanguage();
   return (
     <Shell title="合作伙伴 / Parceiros">
       <div className="stack">
         <section>
-          <h2>联合经纪公司 / Corretoras parceiras</h2>
+          <h2>{t("联合经纪公司 / Corretoras parceiras")}</h2>
           <DataTable
             endpoint="/broker-partners"
             createHref="/partners/brokers/new"
@@ -23,7 +25,7 @@ export default function PartnersPage() {
           />
         </section>
         <section>
-          <h2>渠道商 / Parceiros de canal</h2>
+          <h2>{t("渠道商 / Parceiros de canal")}</h2>
           <DataTable
             endpoint="/channel-partners"
             createHref="/partners/channels/new"

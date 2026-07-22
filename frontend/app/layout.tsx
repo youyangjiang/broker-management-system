@@ -1,8 +1,9 @@
 import "./globals.css";
+import { LanguageProvider } from "./components/LanguageProvider";
 import { PWARegistration } from "./components/PWARegistration";
 
 export const metadata = {
-  title: "华康医保 / HUAKAN SAÚDE",
+  title: "华康医保",
   description: "华康医保业务管理系统",
   manifest: "/manifest.webmanifest",
   icons: {
@@ -27,8 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body>
-        <PWARegistration />
-        {children}
+        <LanguageProvider>
+          <PWARegistration />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

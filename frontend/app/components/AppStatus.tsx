@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { APP_BUILD, APP_VERSION } from "../lib/appVersion";
+import { useLanguage } from "./LanguageProvider";
 
 export function AppStatus() {
+  const { t } = useLanguage();
   const [updateReady, setUpdateReady] = useState(false);
   const [installed, setInstalled] = useState(false);
 
@@ -41,18 +43,18 @@ export function AppStatus() {
   return (
     <section className="panel app-status">
       <div>
-        <span className="muted">当前版本 / Versão atual</span>
+        <span className="muted">{t("当前版本 / Versão atual")}</span>
         <strong>v{APP_VERSION}</strong>
         <span className="muted">Build {APP_BUILD}</span>
       </div>
       <div>
-        <span className="muted">安装状态 / Instalação</span>
-        <strong>{installed ? "已安装 / Instalado" : "浏览器访问 / Navegador"}</strong>
-        <span className="muted">{updateReady ? "发现可用更新 / Atualização disponível" : "已是最新 / Atualizado"}</span>
+        <span className="muted">{t("安装状态 / Instalação")}</span>
+        <strong>{installed ? t("已安装 / Instalado") : t("浏览器访问 / Navegador")}</strong>
+        <span className="muted">{updateReady ? t("发现可用更新 / Atualização disponível") : t("已是最新 / Atualizado")}</span>
       </div>
       <button className="button secondary" type="button" onClick={upgradeApp}>
         <RefreshCw size={16} />
-        一键升级 / Atualizar
+        {t("一键升级 / Atualizar")}
       </button>
     </section>
   );

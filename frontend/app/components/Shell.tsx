@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "./BrandLogo";
+import { useLanguage, type AppLanguage } from "./LanguageProvider";
 import { apiFetch } from "../lib/api";
 import { APP_VERSION } from "../lib/appVersion";
 
@@ -22,8 +23,10 @@ const links = [
 
 export function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   const pathname = usePathname();
+  const { language, setLanguage, t } = useLanguage();
   const [me, setMe] = useState<Record<string, string> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [languageSaving, setLanguageSaving] = useState(false);
 
   useEffect(() => {
     apiFetch<Record<string, string>>("/me").then(setMe).catch(() => setMe(null));
@@ -38,12 +41,22 @@ export function Shell({ title, children }: { title: string; children: React.Reac
     window.location.href = "/login";
   }
 
+  async function changeLanguage(value: AppLanguage) {
+    setLanguageSaving(true);
+    try {
+      await setLanguage(value);
+      setMe((current) => current ? { ...current, language: value } : current);
+    } finally {
+      setLanguageSaving(false);
+    }
+  }
+
   return (
     <div className="shell">
       <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
         <div className="mobile-shell-bar">
           <div className="brand compact"><BrandLogo compact /></div>
-          <button className="icon-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? "关闭菜单 / Fechar menu" : "打开菜单 / Abrir menu"}>
+          <button className="icon-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? t("关闭菜单 / Fechar menu") : t("打开菜单 / Abrir menu")}>
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
@@ -51,7 +64,7 @@ export function Shell({ title, children }: { title: string; children: React.Reac
         <nav className="nav">
           {links.map(([label, href]) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return <Link key={href} className={active ? "active" : ""} href={href}>{label}</Link>;
+            return <Link key={href} className={active ? "active" : ""} href={href}>{t(label)}</Link>;
           })}
         </nav>
         <div className="menu-user">
@@ -61,17 +74,24 @@ export function Shell({ title, children }: { title: string; children: React.Reac
                 <strong>{me.full_name}</strong>
                 <span>{me.email}</span>
               </div>
-              <button className="menu-logout" type="button" onClick={logout}>退出 / Sair</button>
+              <label className="language-setting">
+                <span>{t("系统语言 / Idioma do sistema")}</span>
+                <select value={language} disabled={languageSaving} onChange={(event) => changeLanguage(event.target.value as AppLanguage)}>
+                  <option value="zh-CN">中文</option>
+                  <option value="pt-BR">Português</option>
+                </select>
+              </label>
+              <button className="menu-logout" type="button" onClick={logout}>{t("退出 / Sair")}</button>
             </>
           ) : (
-            <Link className="menu-logout" href="/login">登录 / Entrar</Link>
+            <Link className="menu-logout" href="/login">{t("登录 / Entrar")}</Link>
           )}
         </div>
         <div className="app-version">v{APP_VERSION}</div>
       </aside>
       <main className="main">
         <div className="topbar">
-          <h1 className="title">{title}</h1>
+          <h1 className="title">{t(title)}</h1>
         </div>
         {children}
       </main>

@@ -3,6 +3,7 @@
 import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
+import { useLanguage } from "./LanguageProvider";
 
 type NotificationConfig = {
   vapid_public_key: string;
@@ -17,6 +18,7 @@ function urlBase64ToUint8Array(value: string) {
 }
 
 export function NotificationSettings() {
+  const { t } = useLanguage();
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [message, setMessage] = useState("");
@@ -28,23 +30,23 @@ export function NotificationSettings() {
     if (isSupported) setPermission(Notification.permission);
     apiFetch<NotificationConfig>("/notifications/config")
       .then(setConfig)
-      .catch(() => setMessage("无法读取推送配置 / Falha ao carregar configuração de push"));
-  }, []);
+      .catch(() => setMessage(t("无法读取推送配置 / Falha ao carregar configuração de push")));
+  }, [t]);
 
   async function enableNotifications() {
     if (!supported) {
-      setMessage("当前浏览器不支持通知 / Navegador sem suporte a notificações");
+      setMessage(t("当前浏览器不支持通知 / Navegador sem suporte a notificações"));
       return;
     }
     const nextPermission = await Notification.requestPermission();
     setPermission(nextPermission);
     if (nextPermission !== "granted") {
-      setMessage("通知权限未开启 / Permissão não concedida");
+      setMessage(t("通知权限未开启 / Permissão não concedida"));
       return;
     }
 
     if (!config?.configured || !config.vapid_public_key) {
-      setMessage("服务器推送密钥尚未配置完成 / Chaves de push ainda não configuradas");
+      setMessage(t("服务器推送密钥尚未配置完成 / Chaves de push ainda não configuradas"));
       return;
     }
 
@@ -58,34 +60,34 @@ export function NotificationSettings() {
       }));
 
     await apiFetch("/notifications/subscriptions", { method: "POST", body: JSON.stringify(subscription.toJSON()) });
-    setMessage("通知推送已开启 / Notificações ativadas");
+    setMessage(t("通知推送已开启 / Notificações ativadas"));
   }
 
   async function sendTestNotification() {
     try {
       const result = await apiFetch<{ sent: number; failed: number }>("/notifications/test", {
         method: "POST",
-        body: JSON.stringify({ title: "华康医保", body: "这是一条测试通知 / Esta é uma notificação de teste", url: "/" })
+        body: JSON.stringify({ title: "华康医保", body: t("这是一条测试通知 / Esta é uma notificação de teste"), url: "/" })
       });
-      setMessage(`测试通知已发送 ${result.sent} 条，失败 ${result.failed} 条 / Teste enviado`);
+      setMessage(`${t("测试通知已发送 / Teste enviado")} ${result.sent}，${t("失败 / Falhou")} ${result.failed}`);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "测试通知发送失败 / Falha ao testar");
+      setMessage(err instanceof Error ? err.message : t("测试通知发送失败 / Falha ao testar"));
     }
   }
 
   return (
     <section className="panel notification-settings">
       <div>
-        <span className="muted">手机通知 / Notificações</span>
-        <strong>{permission === "granted" ? "已开启 / Ativadas" : "未开启 / Desativadas"}</strong>
-        <span className="muted">{message || "用于任务提醒和系统通知 / Para lembretes e avisos"}</span>
+        <span className="muted">{t("手机通知 / Notificações")}</span>
+        <strong>{permission === "granted" ? t("已开启 / Ativadas") : t("未开启 / Desativadas")}</strong>
+        <span className="muted">{message || t("用于任务提醒和系统通知 / Para lembretes e avisos")}</span>
       </div>
       <button className="button secondary" type="button" onClick={enableNotifications}>
         <Bell size={16} />
-        开启通知 / Ativar
+        {t("开启通知 / Ativar")}
       </button>
       <button className="button secondary" type="button" onClick={sendTestNotification}>
-        测试通知 / Testar
+        {t("测试通知 / Testar")}
       </button>
     </section>
   );

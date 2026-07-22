@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, PageResult } from "../lib/api";
+import { useLanguage } from "./LanguageProvider";
 
 export function DataTable({ endpoint, columns, createHref, rowHref }: { endpoint: string; columns: { key: string; label: string }[]; createHref?: string; rowHref?: (item: Record<string, string>) => string; }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [data, setData] = useState<PageResult | null>(null);
   const [error, setError] = useState("");
@@ -45,10 +47,10 @@ export function DataTable({ endpoint, columns, createHref, rowHref }: { endpoint
     <div className="panel">
       <div className="toolbar">
         <div className="toolbar-left">
-          <input className="search" placeholder="搜索编号、名称或状态 / Buscar código, nome ou status" value={search} onChange={(event) => setSearch(event.target.value)} />
-          <span className="muted">共 / Total {data?.total ?? 0}</span>
+          <input className="search" placeholder={t("搜索编号、名称或状态 / Buscar código, nome ou status")} value={search} onChange={(event) => setSearch(event.target.value)} />
+          <span className="muted">{t("共 / Total")} {data?.total ?? 0}</span>
         </div>
-        {createHref ? <button className="button" onClick={() => router.push(createHref)}>新增 / Novo</button> : null}
+        {createHref ? <button className="button" onClick={() => router.push(createHref)}>{t("新增 / Novo")}</button> : null}
       </div>
       {error ? <p className="error" style={{ padding: 14 }}>{error}</p> : null}
       <div className="record-list">
@@ -61,7 +63,7 @@ export function DataTable({ endpoint, columns, createHref, rowHref }: { endpoint
             <span className="record-meta">
               {metaColumns.map((column) => (
                 <span key={column.key}>
-                  <em>{column.label}</em>
+                  <em>{t(column.label)}</em>
                   {valueFor(item, column.key)}
                 </span>
               ))}

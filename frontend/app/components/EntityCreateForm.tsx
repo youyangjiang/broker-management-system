@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../lib/api";
+import { useLanguage } from "./LanguageProvider";
 
 export type FieldConfig = {
   name: string;
@@ -83,13 +84,17 @@ function isValidCnpj(value: string) {
 
 export function validateMaskedValue(field: FieldConfig, value: string) {
   if (!value) return "";
+  const labelParts = field.label.split(" / ");
+  const zhLabel = labelParts[0] || field.label;
+  const ptLabel = labelParts.slice(1).join(" / ") || field.label;
+  const invalidMessage = `${zhLabel} 无效 / ${ptLabel} inválido`;
   const digits = onlyDigits(value);
-  if (field.mask === "cep" && digits.length !== 8) return `${field.label} 无效 / inválido`;
-  if (field.mask === "cpf" && !isValidCpf(value)) return `${field.label} 无效 / inválido`;
-  if (field.mask === "cnpj" && !isValidCnpj(value)) return `${field.label} 无效 / inválido`;
+  if (field.mask === "cep" && digits.length !== 8) return invalidMessage;
+  if (field.mask === "cpf" && !isValidCpf(value)) return invalidMessage;
+  if (field.mask === "cnpj" && !isValidCnpj(value)) return invalidMessage;
   if (field.mask === "phone") {
     const localDigits = digits.startsWith("55") && [12, 13].includes(digits.length) ? digits.slice(2) : digits;
-    if (![10, 11].includes(localDigits.length)) return `${field.label} 无效 / inválido`;
+    if (![10, 11].includes(localDigits.length)) return invalidMessage;
   }
   return "";
 }
@@ -112,6 +117,7 @@ export async function lookupCep(cep: string) {
 
 export function EntityCreateForm({ endpoint, fields, redirectTo, endpointFromValues, redirectFromValues, transform }: { endpoint: string; fields: FieldConfig[]; redirectTo: string; endpointFromValues?: (values: Record<string, string>) => string; redirectFromValues?: (values: Record<string, string>) => string; transform?: (values: Record<string, string>) => Record<string, unknown>; }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const initialValues = useMemo(() => Object.fromEntries(fields.map((field) => [field.name, field.defaultValue || ""])), [fields]);
   const [values, setValues] = useState<Record<string, string>>(initialValues);
   const [dynamicOptions, setDynamicOptions] = useState<Record<string, { value: string; label: string }[]>>({});
@@ -140,17 +146,17 @@ export function EntityCreateForm({ endpoint, fields, redirectTo, endpointFromVal
   async function handleCepBlur(field: FieldConfig, value: string) {
     if (!field.autoFillAddress) return;
     if (onlyDigits(value).length !== 8) return;
-    setCepStatus("正在查询 CEP / Consultando CEP");
+    setCepStatus(t("正在查询 CEP / Consultando CEP"));
     const address = await lookupCep(value);
     if (!address) {
-      setCepStatus("未找到 CEP / CEP não encontrado");
+      setCepStatus(t("未找到 CEP / CEP não encontrado"));
       return;
     }
     setValues((current) => ({
       ...current,
       ...Object.fromEntries(Object.entries(address).filter(([key, addressValue]) => addressValue && !current[key]))
     }));
-    setCepStatus("地址已自动填写 / Endereço preenchido");
+    setCepStatus(t("地址已自动填写 / Endereço preenchido"));
   }
 
   async function submit(event: React.FormEvent) {
@@ -160,12 +166,12 @@ export function EntityCreateForm({ endpoint, fields, redirectTo, endpointFromVal
     if (Object.keys(nextErrors).length) { setSaving(false); return; }
     const payload = transform ? transform(values) : Object.fromEntries(Object.entries(values).filter(([, value]) => value !== ""));
     try { await apiFetch(endpointFromValues ? endpointFromValues(values) : endpoint, { method: "POST", body: JSON.stringify(payload) }); router.push(redirectFromValues ? redirectFromValues(values) : redirectTo); }
-    catch (err) { setError(err instanceof Error ? err.message : "保存失败 / Falha ao salvar"); }
+    catch (err) { setError(err instanceof Error ? err.message : t("保存失败 / Falha ao salvar")); }
     finally { setSaving(false); }
   }
 
   return <form className="panel form form-panel" onSubmit={submit}><div className="form-grid">{fields.map((field) => {
     const options = field.options || dynamicOptions[field.name] || [];
-    return <div className={`field ${field.full ? "full" : ""}`} key={field.name}><label htmlFor={field.name}>{field.label}</label>{field.type === "textarea" ? <textarea id={field.name} value={values[field.name] || ""} required={field.required} onChange={(event) => updateValue(field, event.target.value)} /> : field.type === "select" ? <select id={field.name} value={values[field.name] || ""} required={field.required} onChange={(event) => updateValue(field, event.target.value)}><option value="">请选择 / Selecione</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : <input id={field.name} type={field.type || "text"} inputMode={field.mask ? "numeric" : undefined} value={values[field.name] || ""} required={field.required} onChange={(event) => updateValue(field, event.target.value)} onBlur={(event) => handleCepBlur(field, event.target.value)} />}{fieldErrors[field.name] ? <span className="error">{fieldErrors[field.name]}</span> : null}{field.autoFillAddress && cepStatus ? <span className="muted">{cepStatus}</span> : null}</div>;
-  })}</div>{error ? <div className="error">{error}</div> : null}<div className="toolbar-right"><button className="button" type="submit" disabled={saving}>{saving ? "保存中 / Salvando" : "保存 / Salvar"}</button><button className="button secondary" type="button" onClick={() => router.push(redirectTo)}>取消 / Cancelar</button></div></form>;
+    return <div className={`field ${field.full ? "full" : ""}`} key={field.name}><label htmlFor={field.name}>{t(field.label)}</label>{field.type === "textarea" ? <textarea id={field.name} value={values[field.name] || ""} required={field.required} onChange={(event) => updateValue(field, event.target.value)} /> : field.type === "select" ? <select id={field.name} value={values[field.name] || ""} required={field.required} onChange={(event) => updateValue(field, event.target.value)}><option value="">{t("请选择 / Selecione")}</option>{options.map((option) => <option key={option.value} value={option.value}>{t(option.label)}</option>)}</select> : <input id={field.name} type={field.type || "text"} inputMode={field.mask ? "numeric" : undefined} value={values[field.name] || ""} required={field.required} onChange={(event) => updateValue(field, event.target.value)} onBlur={(event) => handleCepBlur(field, event.target.value)} />}{fieldErrors[field.name] ? <span className="error">{t(fieldErrors[field.name])}</span> : null}{field.autoFillAddress && cepStatus ? <span className="muted">{cepStatus}</span> : null}</div>;
+  })}</div>{error ? <div className="error">{error}</div> : null}<div className="toolbar-right"><button className="button" type="submit" disabled={saving}>{saving ? t("保存中 / Salvando") : t("保存 / Salvar")}</button><button className="button secondary" type="button" onClick={() => router.push(redirectTo)}>{t("取消 / Cancelar")}</button></div></form>;
 }
