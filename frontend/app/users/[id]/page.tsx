@@ -2,6 +2,7 @@ import Link from "next/link";
 import { DeleteButton } from "../../components/DeleteButton";
 import { EntityDetail } from "../../components/EntityDetail";
 import { Shell } from "../../components/Shell";
+import { UserPermissionEditor } from "../../components/UserPermissionEditor";
 
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,12 +18,13 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           { key: "full_name", label: "姓名 / Nome" },
           { key: "email", label: "邮箱 / E-mail" },
           { key: "phone", label: "手机 / Celular" },
-          { key: "role_id", label: "用户组 / Grupo" },
+          { key: "role_name", label: "用户组 / Grupo" },
           { key: "status", label: "状态 / Status" },
           { key: "language", label: "语言 / Idioma" },
           { key: "timezone", label: "时区 / Fuso horário" },
           { key: "last_login_at", label: "最后登录 / Último acesso" }
         ]} />
+        <UserPermissionEditor userId={id} />
       </div>
     </Shell>
   );

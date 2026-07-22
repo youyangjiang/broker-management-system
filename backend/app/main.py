@@ -32,6 +32,7 @@ from app.models import (
     RolePermission,
     Task,
     User,
+    UserPermission,
 )
 from app.schemas import (
     AssignmentCreate,
@@ -65,6 +66,7 @@ from app.schemas import (
     TokenResponse,
     UserCreate,
     UserOut,
+    UserPermissionUpdate,
     UserUpdate,
 )
 from app.security import create_access_token, hash_password, verify_password
@@ -111,6 +113,30 @@ def soft_delete_entity(db: Session, *, entity, user: User, entity_type: str) -> 
     except SQLAlchemyError:
         db.rollback()
     return {"deleted": True}
+
+
+def user_permission_summary(db: Session, target: User) -> dict:
+    all_permissions = db.scalars(select(Permission).where(Permission.deleted_at.is_(None)).order_by(Permission.code)).all()
+    role_codes = set(
+        db.scalars(
+            select(Permission.code)
+            .join(RolePermission, Permission.id == RolePermission.permission_id)
+            .where(RolePermission.role_id == target.role_id)
+        ).all()
+    )
+    user_codes = set(
+        db.scalars(
+            select(Permission.code)
+            .join(UserPermission, Permission.id == UserPermission.permission_id)
+            .where(UserPermission.user_id == target.id)
+        ).all()
+    )
+    return {
+        "role_permission_codes": sorted(role_codes),
+        "user_permission_codes": sorted(user_codes),
+        "effective_permission_codes": sorted(role_codes | user_codes),
+        "all_permissions": [serialize_model(permission) for permission in all_permissions],
+    }
 
 
 @app.post("/api/v1/auth/login", response_model=TokenResponse)
@@ -165,7 +191,11 @@ def get_user(target_user_id: UUID, db: Session = Depends(get_db), user: User = D
     target = db.get(User, target_user_id)
     if not target or target.deleted_at:
         raise HTTPException(status_code=404, detail="User not found")
-    return serialize_model(target)
+    return {
+        **serialize_model(target),
+        "role_name": target.role.name if target.role else "",
+        **user_permission_summary(db, target),
+    }
 
 
 @app.patch("/api/v1/users/{target_user_id}")
@@ -197,6 +227,22 @@ def delete_user(target_user_id: UUID, db: Session = Depends(get_db), user: User 
         if active_admins <= 1:
             raise HTTPException(status_code=400, detail="Last active admin cannot be deleted")
     return soft_delete_entity(db, entity=target, user=user, entity_type="user")
+
+
+@app.patch("/api/v1/users/{target_user_id}/permissions")
+def update_user_permissions(target_user_id: UUID, data: UserPermissionUpdate, db: Session = Depends(get_db), user: User = Depends(require_permission("users.write"))) -> dict:
+    target = db.get(User, target_user_id)
+    if not target or target.deleted_at:
+        raise HTTPException(status_code=404, detail="User not found")
+    permissions = db.scalars(select(Permission).where(Permission.code.in_(data.permission_codes))).all()
+    if len(permissions) != len(set(data.permission_codes)):
+        raise HTTPException(status_code=400, detail="Unknown permission code")
+    db.query(UserPermission).filter(UserPermission.user_id == target_user_id).delete()
+    for permission in permissions:
+        db.add(UserPermission(user_id=target_user_id, permission_id=permission.id))
+    write_audit(db, user_id=user.id, action_type="update", entity_type="user_permissions", entity_id=target_user_id, old_data=None, new_data={"permission_codes": data.permission_codes})
+    db.commit()
+    return {"user_id": str(target_user_id), **user_permission_summary(db, target)}
 
 
 @app.get("/api/v1/roles")

@@ -499,6 +499,18 @@ textarea {
   border-radius: 6px;
 }
 
+.checkbox-row.compact {
+  padding: 8px 10px;
+}
+
+.permission-inherited {
+  background: #eef8f6;
+}
+
+.permission-summary {
+  margin-bottom: 16px;
+}
+
 .stack {
   display: grid;
   gap: 16px;

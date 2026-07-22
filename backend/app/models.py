@@ -37,6 +37,12 @@ class RolePermission(Base):
     permission_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("permissions.id"), primary_key=True)
 
 
+class UserPermission(Base):
+    __tablename__ = "user_permissions"
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"), primary_key=True)
+    permission_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("permissions.id"), primary_key=True)
+
+
 class Team(Base, AuditMixin):
     __tablename__ = "teams"
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)

@@ -13,7 +13,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
           { name: "email", label: "邮箱 / E-mail", type: "email", required: true },
           { name: "password", label: "新密码（留空不修改） / Nova senha", type: "password" },
           { name: "phone", label: "手机 / Celular", mask: "phone" },
-          { name: "role_id", label: "用户分组 / Grupo de usuário", type: "select", optionsEndpoint: "/roles", optionLabelKey: "name", required: true },
+          { name: "role_id", label: "用户组 / Grupo de usuário", type: "select", optionsEndpoint: "/roles", optionLabelKey: "name", required: true },
           { name: "status", label: "状态 / Status", type: "select", options: [{ value: "active", label: "启用 / Ativo" }, { value: "inactive", label: "停用 / Inativo" }], required: true },
           { name: "language", label: "语言 / Idioma", type: "select", options: [{ value: "zh-CN", label: "中文 / Chinês" }, { value: "pt-BR", label: "Português / 葡语" }] }
         ]}

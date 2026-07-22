@@ -2,13 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Shell } from "../../components/Shell";
+import { groupLabels, groupPermissions, permissionLabel, type Permission } from "../../components/PermissionLabels";
 import { apiFetch } from "../../lib/api";
-
-type Permission = {
-  id: string;
-  code: string;
-  name: string;
-};
 
 type Role = {
   id: string;
@@ -24,34 +19,6 @@ type RoleForm = {
   name: string;
   description: string;
 };
-
-const permissionLabels: Record<string, string> = {
-  "clients.read": "查看客户 / Ver clientes",
-  "clients.write": "新增、编辑、删除客户 / Criar, editar e excluir clientes",
-  "opportunities.read": "查看商机 / Ver oportunidades",
-  "opportunities.write": "新增、编辑、删除商机 / Criar, editar e excluir oportunidades",
-  "requirements.read": "查看需求、报价、保单 / Ver necessidades, cotações e apólices",
-  "requirements.write": "管理需求、报价、分配和保单 / Gerenciar necessidades, cotações, distribuições e apólices",
-  "tasks.read": "查看任务 / Ver tarefas",
-  "tasks.write": "新增、编辑、删除任务 / Criar, editar e excluir tarefas",
-  "users.read": "查看用户和用户组 / Ver usuários e grupos",
-  "users.write": "管理用户、用户组和权限 / Gerenciar usuários, grupos e permissões",
-  "audit.read": "查看审计记录 / Ver auditoria"
-};
-
-const groupLabels: Record<string, string> = {
-  clients: "客户 / Clientes",
-  opportunities: "商机 / Oportunidades",
-  requirements: "需求、报价、保单 / Necessidades, cotações e apólices",
-  tasks: "任务 / Tarefas",
-  users: "用户与权限 / Usuários e permissões",
-  audit: "审计 / Auditoria",
-  other: "其他 / Outros"
-};
-
-function permissionGroup(code: string) {
-  return code.split(".")[0] || "other";
-}
 
 function emptyRoleForm(): RoleForm {
   return { code: "", name: "", description: "" };
@@ -95,14 +62,7 @@ export default function RolePermissionsPage() {
   const selectedRole = roles.find((role) => role.id === selectedRoleId);
   const permissions = selectedRole?.all_permissions || roles[0]?.all_permissions || [];
   const isNewGroup = !selectedRoleId;
-
-  const groupedPermissions = useMemo(() => {
-    return permissions.reduce<Record<string, Permission[]>>((groups, permission) => {
-      const group = permissionGroup(permission.code);
-      groups[group] = [...(groups[group] || []), permission];
-      return groups;
-    }, {});
-  }, [permissions]);
+  const groupedPermissions = useMemo(() => groupPermissions(permissions), [permissions]);
 
   function chooseRoleFromRows(roleId: string, sourceRows = roles) {
     const role = sourceRows.find((item) => item.id === roleId);
@@ -126,7 +86,7 @@ export default function RolePermissionsPage() {
   }
 
   function toggle(code: string) {
-    setSelectedCodes((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]);
+    setSelectedCodes((current) => (current.includes(code) ? current.filter((item) => item !== code) : [...current, code]));
   }
 
   function setGroupCodes(codes: string[], checked: boolean) {
@@ -189,14 +149,14 @@ export default function RolePermissionsPage() {
           <div className="toolbar">
             <div className="toolbar-left">
               <strong>用户组资料 / Dados do grupo</strong>
-              <span className="muted">新增用户组时，勾选的权限会一起保存 / Ao cadastrar, as permissões marcadas serão salvas</span>
+              <span className="muted">用户组是基础权限；用户个人权限可以额外补充 / O grupo define a base de permissões</span>
             </div>
             <button className="button secondary" type="button" onClick={prepareNewGroup}>新增用户组 / Novo grupo</button>
           </div>
 
           <form className="form-grid" onSubmit={submitGroup}>
             <div className="field">
-              <label>选择现有用户组 / Selecionar grupo existente</label>
+              <label>选择现有用户组 / Selecionar grupo</label>
               <select value={selectedRoleId} onChange={(event) => chooseRoleFromRows(event.target.value)}>
                 <option value="">新增用户组 / Novo grupo</option>
                 {roles.map((role) => <option key={role.id} value={role.id}>{role.name || role.code}</option>)}
@@ -231,28 +191,28 @@ export default function RolePermissionsPage() {
         <section className="panel form-panel">
           <div className="toolbar">
             <div className="toolbar-left">
-              <strong>权限设置 / Configuração de permissões</strong>
+              <strong>组权限设置 / Permissões do grupo</strong>
               <span className="muted">{selectedRole ? `${selectedRole.name} (${selectedRole.code})` : "正在注册新用户组 / Cadastrando novo grupo"}</span>
             </div>
           </div>
           <div className="stack">
-            {Object.entries(groupedPermissions).map(([group, groupPermissions]) => {
-              const groupCodes = groupPermissions.map((permission) => permission.code);
+            {Object.entries(groupedPermissions).map(([group, groupItems]) => {
+              const groupCodes = groupItems.map((permission) => permission.code);
               const allChecked = groupCodes.every((code) => selectedCodes.includes(code));
               return (
                 <div key={group} className="permission-section">
                   <div className="toolbar">
                     <h3>{groupLabels[group] || groupLabels.other}</h3>
-                    <label className="checkbox-row">
+                    <label className="checkbox-row compact">
                       <input type="checkbox" checked={allChecked} onChange={(event) => setGroupCodes(groupCodes, event.target.checked)} />
                       <span>本组全选 / Selecionar grupo</span>
                     </label>
                   </div>
                   <div className="permission-grid">
-                    {groupPermissions.map((permission) => (
+                    {groupItems.map((permission) => (
                       <label key={permission.code} className="checkbox-row">
                         <input type="checkbox" checked={selectedCodes.includes(permission.code)} onChange={() => toggle(permission.code)} />
-                        <span>{permissionLabels[permission.code] || permission.name || permission.code}</span>
+                        <span>{permissionLabel(permission)}</span>
                       </label>
                     ))}
                   </div>

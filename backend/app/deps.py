@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import Permission, RolePermission, User
+from app.models import Permission, RolePermission, User, UserPermission
 from app.security import decode_access_token
 
 
@@ -25,14 +25,18 @@ def require_permission(permission_code: str):
     def checker(user: User = Depends(current_user), db: Session = Depends(get_db)) -> User:
         if user.role.code == "admin":
             return user
-        stmt = (
+        user_stmt = (
+            select(Permission.code)
+            .join(UserPermission, Permission.id == UserPermission.permission_id)
+            .where(UserPermission.user_id == user.id, Permission.code == permission_code)
+        )
+        role_stmt = (
             select(Permission.code)
             .join(RolePermission, Permission.id == RolePermission.permission_id)
             .where(RolePermission.role_id == user.role_id, Permission.code == permission_code)
         )
-        if not db.scalar(stmt):
+        if not db.scalar(user_stmt) and not db.scalar(role_stmt):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Missing permission: {permission_code}")
         return user
 
     return checker
-

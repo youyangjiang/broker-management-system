@@ -113,6 +113,10 @@ class RolePermissionUpdate(BaseModel):
     permission_codes: list[str]
 
 
+class UserPermissionUpdate(BaseModel):
+    permission_codes: list[str]
+
+
 class RoleCreate(BaseModel):
     code: str
     name: str

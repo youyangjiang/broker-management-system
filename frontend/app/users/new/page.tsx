@@ -12,7 +12,7 @@ export default function NewUserPage() {
           { name: "email", label: "邮箱 / E-mail", type: "email", required: true },
           { name: "password", label: "密码 / Senha", type: "password", required: true },
           { name: "phone", label: "手机 / Celular", mask: "phone" },
-          { name: "role_id", label: "用户分组 / Grupo de usuário", type: "select", optionsEndpoint: "/roles", optionLabelKey: "name", required: true },
+          { name: "role_id", label: "用户组 / Grupo de usuário", type: "select", optionsEndpoint: "/roles", optionLabelKey: "name", required: true },
           { name: "status", label: "状态 / Status", type: "select", defaultValue: "active", options: [{ value: "active", label: "启用 / Ativo" }, { value: "inactive", label: "停用 / Inativo" }], required: true },
           { name: "language", label: "语言 / Idioma", type: "select", defaultValue: "zh-CN", options: [{ value: "zh-CN", label: "中文 / Chinês" }, { value: "pt-BR", label: "Português / 葡语" }] }
         ]}
